@@ -2718,3 +2718,76 @@ NA
 </tr>
 </tbody>
 </table>
+
+The dataset contains nearly 200k rows and 128 columns.
+
+    #> [1] 183092    128
+
+Column names are as follows:
+
+    #>   [1] "zona"       "muni_dom"   "co_dom_x"   "co_dom_y"   "id_dom"    
+    #>   [6] "f_dom"      "fe_dom"     "dom"        "cd_entre"   "data"      
+    #>  [11] "tipo_dom"   "agua"       "rua_pavi"   "no_morad"   "tot_fam"   
+    #>  [16] "id_fam"     "f_fam"      "fe_fam"     "familia"    "no_moraf"  
+    #>  [21] "condmora"   "qt_banho"   "qt_empre"   "qt_auto"    "qt_micro"  
+    #>  [26] "qt_lavalou" "qt_gel1"    "qt_gel2"    "qt_freez"   "qt_mlava"  
+    #>  [31] "qt_dvd"     "qt_microon" "qt_moto"    "qt_secarou" "qt_bicicle"
+    #>  [36] "nao_dcl_it" "criteriobr" "ponto_br"   "ano_auto1"  "ano_auto2" 
+    #>  [41] "ano_auto3"  "renda_fa"   "cd_renfa"   "id_pess"    "f_pess"    
+    #>  [46] "fe_pess"    "pessoa"     "sit_fam"    "idade"      "sexo"      
+    #>  [51] "estuda"     "grau_ins"   "cd_ativi"   "co_ren_i"   "vl_ren_i"  
+    #>  [56] "zona_esc"   "muniesc"    "co_esc_x"   "co_esc_y"   "tipo_esc"  
+    #>  [61] "zonatra1"   "munitra1"   "co_tr1_x"   "co_tr1_y"   "trab1_re"  
+    #>  [66] "trabext1"   "ocup1"      "setor1"     "vinc1"      "zonatra2"  
+    #>  [71] "munitra2"   "co_tr2_x"   "co_tr2_y"   "trab2_re"   "trabext2"  
+    #>  [76] "ocup2"      "setor2"     "vinc2"      "n_viag"     "fe_via"    
+    #>  [81] "dia_sem"    "tot_viag"   "zona_o"     "muni_o"     "co_o_x"    
+    #>  [86] "co_o_y"     "zona_d"     "muni_d"     "co_d_x"     "co_d_y"    
+    #>  [91] "zona_t1"    "muni_t1"    "co_t1_x"    "co_t1_y"    "zona_t2"   
+    #>  [96] "muni_t2"    "co_t2_x"    "co_t2_y"    "zona_t3"    "muni_t3"   
+    #> [101] "co_t3_x"    "co_t3_y"    "motivo_o"   "motivo_d"   "mot_sres"  
+    #> [106] "servir_o"   "servir_d"   "modo1"      "modo2"      "modo3"     
+    #> [111] "modo4"      "h_saida"    "min_saida"  "anda_o"     "h_cheg"    
+    #> [116] "min_cheg"   "anda_d"     "duracao"    "modoprin"   "tipvg"     
+    #> [121] "pag_viag"   "tp_esauto"  "vl_est"     "pe_bici"    "via_bici"  
+    #> [126] "tp_esbici"  "distancia"  "id_ordem"
+
+Key columns are `modo1`:
+
+    #> 
+    #> Labels:
+    #>  value                                               label
+    #>      1                                               Metrô
+    #>      2                                                Trem
+    #>      3                                          Monotrilho
+    #>      4 Ônibus/micro-ônibus/perua do município de São Paulo
+    #>      5      Ônibus/micro-ônibus/perua de outros municípios
+    #>      6             Ônibus/micro-ônibus/perua metropolitano
+    #>      7                                  Transporte fretado
+    #>      8                                  Transporte escolar
+    #>      9                                 Dirigindo automóvel
+    #>     10                             Passageiro de automóvel
+    #>     11                                   Táxi convencional
+    #>     12                               Táxi não convencional
+    #>     13                                      Dirigindo moto
+    #>     14                                  Passageiro de moto
+    #>     15                                           Bicicleta
+    #>     16                                                A pé
+    #>     17                                              Outros
+
+![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->![](README_files/figure-gfm/unnamed-chunk-6-2.png)<!-- -->
+
+<!-- A quick overview of the data is shown below: -->
+
+We can map a sample of the data as follows:
+
+    #>      co_o_x           co_o_y            co_d_x           co_d_y       
+    #>  Min.   :295034   Min.   :7370625   Min.   :294581   Min.   :7375274  
+    #>  1st Qu.:326134   1st Qu.:7390746   1st Qu.:325462   1st Qu.:7389626  
+    #>  Median :330651   Median :7395244   Median :330684   Median :7394994  
+    #>  Mean   :336034   Mean   :7394347   Mean   :335293   Mean   :7394305  
+    #>  3rd Qu.:338522   3rd Qu.:7398495   3rd Qu.:337528   3rd Qu.:7397539  
+    #>  Max.   :413010   Max.   :7420580   Max.   :400793   Max.   :7416888
+    #> [1] 19.62695
+
+![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->

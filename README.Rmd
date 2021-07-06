@@ -13,6 +13,8 @@ knitr::opts_chunk$set(
 
 # packages we will use
 library(tidyverse)
+library(tmap)
+tmap_mode("view")
 ```
 
 # OD2017
@@ -25,12 +27,63 @@ The data has the following structure.
 
 ```{r}
 # unzip(zipfile = "~/hd/data/project-data/spshared/OD2017.zip", exdir = "~/hd/data/project-data/spshared/")
+browseURL("~/hd/data/project-data/spshared/")
 load("~/hd/data/project-data/spshared/OD2017.rda") # loads a OD_2017_v1
+# class(OD_2017_v1)
+# table(OD_2017_v1$f_dom)
 ```
 
 ```{r}
 OD_2017_v1 %>% 
   head() %>% 
   kableExtra::kable()
+```
+
+The dataset contains nearly 200k rows and 128 columns.
+
+```{r}
+dim(OD_2017_v1)
+```
+
+Column names are as follows:
+
+```{r}
+names(OD_2017_v1)
+```
+
+
+Key columns are `modo1`:
+
+```{r}
+haven::print_labels(OD_2017_v1$modo1)
+OD_2017_v1$mode_char = haven::as_factor(OD_2017_v1$modo1)
+plot(table(OD_2017_v1$mode_char))
+OD_2017_v1 %>% 
+  ggplot() +
+  geom_bar(aes(mode_char)) +
+  theme(axis.text.x = element_text(angle = 60, vjust = 1, hjust = 1))
+```
+
+
+<!-- A quick overview of the data is shown below: -->
+
+```{r}
+# skimr::skim(OD_2017_v1)
+```
+
+We can map a sample of the data as follows:
+
+```{r}
+set.seed(40)
+od_sample = OD_2017_v1 %>% 
+  sample_n(100)
+od_coords = od_sample %>% 
+  select(co_o_x, co_o_y, co_d_x, co_d_y) %>% 
+  na.omit() 
+summary(od_coords)
+sd(od_coords$co_o_x) / 1000 # 20km - makes sense
+od_sf = od::odc_to_sf(odc = od_coords, crs = 31983)
+qtm(od_sf)
+# mapview::mapview(od_sf)
 ```
 
