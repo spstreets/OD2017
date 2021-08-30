@@ -11,6 +11,8 @@ knitr::opts_chunk$set(
 )
 
 library(tidyverse)
+library(sf)
+library(tmap)
 load("C:/Users/Lucas/Downloads/OD2017/OD2017.rda")
 ```
 
@@ -18,7 +20,7 @@ I create this separated document to be the main reference on the exploratory dat
 
 ### Key variables
 
-The data set contains a lot of socioeconomic variables. Since our interest relies on trips, flows and mode choices, the analyses so far are at the trip level. In this context, the variables that contain a the modes used in each trip are the main ones (`modo1`, `modo2`, `modo3`, and `modo4`). There is also the coordinates for each residence (`co_dom_x` and `co_dom_y`) and workplaces (`co_tr1_x` and `co_tr1_y`), and obviously the origin and destination zones and coordinates (e.g. `zona_o`, `co_o_x`, `co_o_y`) and euclidean distance. As you can see in the graph below, the vast majority of trips are made using just one mode. I use `modo1`in the remaining graphs. 
+The data set contains a lot of socioeconomic variables. Since our interest relies on trips, flows and mode choices, the analyses so far are at the trip level. In this context, the variables that contain a the modes used in each trip are the main ones (`modo1`, `modo2`, `modo3`, and `modo4`). There is also the coordinates for each residence (`co_dom_x` and `co_dom_y`) and workplaces (`co_tr1_x` and `co_tr1_y`), and obviously the origin and destination zones and coordinates (e.g. `zona_o`, `co_o_x`, `co_o_y`) and euclidean distance. As you can see in the graph below, the vast majority of trips are made using just one mode. I use the main mode used in the trip (`modoprin`) in the remaining graphs. 
 
 ```{r, echo=FALSE}
 
@@ -58,20 +60,20 @@ I aggregate the different names used for similar things. And this is the resulti
 OD_2017_v1 = OD_2017_v1 %>%
   dplyr::mutate(
     modo_simples = case_when(
-      modo1==1 | modo1==2 | modo1==3 ~ "Metrô, trem e monotrilho",
-      modo1==4 | modo1==5 | modo1==6 ~ "Ônibus",
-      modo1==7 | modo1==8            ~ "Fretado e Escolar",
-      modo1==9 | modo1==10           ~ "Automóvel",
-      modo1==11 | modo1==12          ~ "Táxi e derivados",
-      modo1==13 | modo1==14          ~ "Moto",
-      modo1==15                      ~ "Bicicleta",
-      modo1==16                      ~ "A pé",
-      modo1==17                      ~ "Outros",
+      modoprin==1 | modoprin==2 | modoprin==3 ~ "Metrô, trem e monotrilho",
+      modoprin==4 | modoprin==5 | modoprin==6 ~ "Ônibus",
+      modoprin==7 | modoprin==8            ~ "Fretado e Escolar",
+      modoprin==9 | modoprin==10           ~ "Automóvel",
+      modoprin==11 | modoprin==12          ~ "Táxi e derivados",
+      modoprin==13 | modoprin==14          ~ "Moto",
+      modoprin==15                      ~ "Bicicleta",
+      modoprin==16                      ~ "A pé",
+      modoprin==17                      ~ "Outros",
     )
   )
 
 OD_2017_v1 %>%
-  filter(!is.na(modo1)) %>%
+  filter(!is.na(modoprin)) %>%
   ggplot() +
   geom_bar(aes(modo_simples, weight=fe_via)) +
   scale_y_continuous(name = "Thousands of trips / day",
@@ -97,17 +99,17 @@ I tried two different recategorisations (see code for the choices).The first is 
 OD_2017_v1 = OD_2017_v1 %>%
   dplyr::mutate(
     mode_recat1 = case_when(
-      modo1 %in% 1:6 ~ "Public transport",
-      modo1 %in% 9:10 ~ "Car",
-      modo1 %in% 13:14 ~ "Motorcycle",
-      modo1 == 15 ~ "Bicycle",
-      modo1 == 16 ~ "On foot",
-      modo1 == 17 | modo1 == 12 | modo1 == 11 | modo1 == 7 | modo1 == 8 ~ "Other"
+      modoprin %in% 1:6 ~ "Public transport",
+      modoprin %in% 9:10 ~ "Car",
+      modoprin %in% 13:14 ~ "Motorcycle",
+      modoprin == 15 ~ "Bicycle",
+      modoprin == 16 ~ "On foot",
+      modoprin == 17 | modoprin == 12 | modoprin == 11 | modoprin == 7 | modoprin == 8 ~ "Other"
     )
   )
 
 OD_2017_v1 %>%
-  filter(!is.na(modo1)) %>%
+  filter(!is.na(modoprin)) %>%
   ggplot() +
   geom_bar(aes(mode_recat1, weight=fe_via)) +
   scale_y_continuous(name = "Thousands of trips / day",
@@ -128,18 +130,18 @@ OD_2017_v1 %>%
 OD_2017_v1 = OD_2017_v1 %>%
   dplyr::mutate(
     mode_recat2 = case_when(
-      modo1 %in% 1:6 ~ "Public transport",
-      modo1 == 9 | modo1 == 13 ~ "Driving",
-      modo1==10 | modo1==14 ~ "Rider",
-      modo1 %in% c(7, 8, 11, 12) ~ "Private transport passenger",
-      modo1==15 ~ "Cycling",
-      modo1==16 ~ "Walking",
-      modo1==17 ~ "Other"
+      modoprin %in% 1:6 ~ "Public transport",
+      modoprin == 9 | modoprin == 13 ~ "Driving",
+      modoprin==10 | modoprin==14 ~ "Rider",
+      modoprin %in% c(7, 8, 11, 12) ~ "Private transport passenger",
+      modoprin==15 ~ "Cycling",
+      modoprin==16 ~ "Walking",
+      modoprin==17 ~ "Other"
     )
   )
 
 OD_2017_v1 %>%
-  filter(!is.na(modo1)) %>%
+  filter(!is.na(modoprin)) %>%
   ggplot() +
   geom_bar(aes(mode_recat2, weight=fe_via)) +
   scale_y_continuous(name = "Thousands of trips / day",
@@ -154,3 +156,97 @@ OD_2017_v1 %>%
   theme(axis.text.x = element_text(angle = 60, vjust = 1, hjust = 1))
 
 ```
+
+
+### Basic geographic analysis
+
+```{r, include=FALSE}
+
+zonas_od = st_read("C:/Users/Lucas/Downloads/OD2017/shapefiles/Zonas_2017_region.shp")
+tmap_mode("plot")
+
+```
+
+```{r, echo=FALSE}
+
+OD = OD_2017_v1 %>%
+  filter(!is.na(modoprin)) %>%
+  select(zona_o, zona_d, modoprin, fe_via) %>%
+  mutate(
+    public = ifelse(modoprin %in% 1:6, 1, 0)*fe_via,
+    car = ifelse(modoprin %in% 9:10, 1, 0)*fe_via,
+    motorcycle = ifelse(modoprin %in% 13:14, 1, 0)*fe_via,
+    bike = ifelse(modoprin == 15, 1, 0)*fe_via,
+    foot = ifelse(modoprin == 16, 1, 0)*fe_via,
+    other = ifelse(modoprin %in% c(7, 8, 11, 12, 17), 1, 0)*fe_via
+         ) %>%
+  select(zona_o, zona_d, public, car, motorcycle, bike, foot, other) %>%
+  group_by(zona_o, zona_d) %>%
+  summarise_all(sum) %>%
+  mutate(trips = public + car + motorcycle + bike + foot + other)
+
+# check:
+# sum(OD$public) + sum(OD$car) + sum(OD$motorcycle) + sum(OD$bike) + sum(OD$foot) + sum(OD$other)
+
+origin = OD %>%
+  ungroup() %>%
+  select(-zona_d) %>%
+  group_by(zona_o) %>%
+  summarise_all(sum) %>%
+  rename(trips_o = trips) %>%
+  select(zona_o, trips_o)
+
+destination = OD %>%
+  ungroup() %>%
+  select(-zona_o) %>%
+  group_by(zona_d) %>%
+  summarise_all(sum) %>%
+  rename(trips_d = trips) %>%
+  select(zona_d, trips_d)
+
+zonas_od = zonas_od %>%
+  left_join(origin, by = c("NumeroZona" = "zona_o")) %>%
+  left_join(destination, by=c("NumeroZona" = "zona_d"))
+
+
+tm_shape(zonas_od) + tm_fill(c("trips_o", "trips_d"), 
+                             style = "cont",
+                             title = "Trips")  +
+  tm_facets(free.scales = FALSE, ncol = 2) +
+  tm_layout(title = "São Paulo Metro Region",
+            panel.labels = c("Zone of origin", "Zone of destination"),
+            legend.outside = TRUE)
+
+```
+
+Plotting only the São Paulo City.
+
+```{r, echo=FALSE}
+
+zonas_od_sp = zonas_od %>%
+  filter(NomeMunici=="São Paulo")
+
+tm_shape(zonas_od_sp) + tm_fill(c("trips_o", "trips_d"),
+                                style = "cont",
+                                title = "Trips"
+                                )  +
+  tm_borders(col = "black", lwd = 0.1) + 
+  tm_facets(free.scales = FALSE, ncol = 2) +
+  tm_layout(title = "São Paulo Metro City",
+            panel.labels = c("Zone of origin", "Zone of destination"),
+            inner.margins = c(0, .02, .02, .02))
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+

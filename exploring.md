@@ -18,7 +18,8 @@ and `modo4`). There is also the coordinates for each residence
 and obviously the origin and destination zones and coordinates
 (e.g. `zona_o`, `co_o_x`, `co_o_y`) and euclidean distance. As you can
 see in the graph below, the vast majority of trips are made using just
-one mode. I use `modo1`in the remaining graphs.
+one mode. I use the main mode used in the trip (`modoprin`) in the
+remaining graphs.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
@@ -38,3 +39,11 @@ first is based on the “vehicle” itself, and the other relies on the
 ![](exploring_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 ![](exploring_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+### Basic geographic analysis
+
+![](exploring_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+Plotting only the São Paulo City.
+
+![](exploring_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
