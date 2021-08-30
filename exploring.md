@@ -42,8 +42,43 @@ first is based on the “vehicle” itself, and the other relies on the
 
 ### Basic geographic analysis
 
+Here I plot the main zones of origin and destination using the total
+number of trips – always using the survey’s expansion factor. It is
+interesting to note that there is no centrality pattern when we look at
+the main Zones of Destination. Maybe we should restrict the analysis to
+specific types of trips (e.g., commute strictly defined). I checked
+these results with the official Tables and they are the same in terms of
+the main zones of origin and destination.
+
 ![](exploring_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
-Plotting only the São Paulo City.
+Plotting only the São Paulo City.There is no pattern of spatial
+centrality in destinations either.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+I then remove the intrazonal trips and plot the same maps to test
+whether these patterns come from intrazonal trips only. It seems that is
+not the case.
+
+![](exploring_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+And the same conclusion applies for São Paulo City…
+
+![](exploring_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+#### Active travels and trip patterns
+
+Following the Bristol examples in Robin’s book now. But maybe we should
+zoom in the São Paulo City.
+
+    #> Creating centroids representing desire line start and end points.
+
+![](exploring_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+There are still too many zones…
+
+    #> Creating centroids representing desire line start and end points.
+    #> Legend labels were too wide. Therefore, legend.text.size has been set to 0.47. Increase legend.width (argument of tm_layout) to make the legend wider and therefore the labels larger.
+
+![](exploring_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
