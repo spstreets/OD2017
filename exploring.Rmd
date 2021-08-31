@@ -163,16 +163,44 @@ OD_2017_v1 %>%
 
 ```
 
+Now the A/B Streets classification (foot, bike, car, public transport and other):
+
+```{r, echo=FALSE}
+
+OD_2017_v1 = OD_2017_v1 %>%
+  dplyr::mutate(
+    mode_ab_streets = case_when(
+      modoprin %in% 1:6 ~ "Public transport",
+      modoprin == 16 ~ "Foot",
+      modoprin==9 | modoprin==10 ~ "Car",
+      modoprin %in% c(7, 8, 11, 12, 13, 14, 17) ~ "Other",
+      modoprin==15 ~ "Bike"
+    )
+  )
+
+
+OD_2017_v1 %>%
+  filter(!is.na(modoprin)) %>%
+  ggplot() +
+  geom_bar(aes(mode_ab_streets, weight=fe_via)) +
+  scale_y_continuous(name = "Thousands of trips / day",
+                     labels=function(x) format(x/1000,
+                                               big.mark = ",",
+                                               decimal.mark = ".",
+                                               scientific = FALSE)
+                     ) +
+  ggtitle("A/B Streets Classification") +
+  xlab("") +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 60, vjust = 1, hjust = 1))
+
+
+```
+
+
 ### Basic temporal analysis
 
 We can look at the number of trips recorded in different days of the week as follows:
-
-```{r}
-OD_2017_v1 %>% 
-  group_by(dia_sem) %>% 
-  summarise(mean_weight = mean(fe_via))
-```
-
 
 ```{r}
 od_hour = OD_2017_v1 %>% 
@@ -196,6 +224,24 @@ od_hour %>%
   geom_line(aes(h_saida, total_trips)) +
   geom_line(aes(h_cheg, total_trips), data = od_hour_arrival, color = "blue") +
   geom_vline(xintercept = c(10, 15))
+
+```
+
+Looking at the same graph but taking into account the minutes (i.e. using hour as a continuous variable)
+
+```{r, echo=FALSE}
+
+OD_2017_v1 %>%
+  filter(!is.na(modoprin)) %>%
+  mutate(
+    saida = h_saida + min_saida/60,
+    chegada = h_cheg + min_cheg/60
+  ) %>%
+  ggplot() +
+  geom_density(aes(x=saida, weight=fe_via)) +
+  geom_density(aes(x=chegada, weight=fe_via), color="blue") +
+  geom_vline(xintercept = c(10, 15))
+
 ```
 
 
