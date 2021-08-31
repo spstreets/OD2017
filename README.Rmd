@@ -28,9 +28,11 @@ The data has the following structure.
 ```{r}
 # unzip(zipfile = "~/hd/data/project-data/spshared/OD2017.zip", exdir = "~/hd/data/project-data/spshared/")
 browseURL("~/hd/data/project-data/spshared/")
+file.copy("~/hd/data/project-data/spshared/OD2017.rda", ".")
 load("~/hd/data/project-data/spshared/OD2017.rda") # loads a OD_2017_v1
 # class(OD_2017_v1)
 # table(OD_2017_v1$f_dom)
+saveRDS(OD_2017_v1, "OD_2017_v1.Rds")
 ```
 
 ```{r}
