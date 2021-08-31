@@ -15,7 +15,10 @@ library(sf)
 library(tmap)
 library(stplanr)
 
-load("C:/Users/Lucas/Downloads/OD2017/OD2017.rda")
+# assume data is in the folder
+folder = "C:/Users/Lucas/Downloads/OD2017/"
+folder = "~/hd/data/project-data/spshared/"
+load(file.path(folder, "OD2017.rda"))
 
 ```
 
@@ -160,12 +163,46 @@ OD_2017_v1 %>%
 
 ```
 
+### Basic temporal analysis
+
+We can look at the number of trips recorded in different days of the week as follows:
+
+```{r}
+OD_2017_v1 %>% 
+  group_by(dia_sem) %>% 
+  summarise(mean_weight = mean(fe_via))
+```
+
+
+```{r}
+od_hour = OD_2017_v1 %>% 
+  group_by(h_saida) %>% 
+  summarise(
+    n_trips = n(),
+    mean_weight = mean(fe_via),
+    total_trips = n_trips * mean_weight
+    )
+
+od_hour_arrival = OD_2017_v1 %>% 
+  group_by(h_cheg) %>% 
+  summarise(
+    n_trips = n(),
+    mean_weight = mean(fe_via),
+    total_trips = n_trips * mean_weight
+    )
+
+od_hour %>% 
+  ggplot() +
+  geom_line(aes(h_saida, total_trips)) +
+  geom_line(aes(h_cheg, total_trips), data = od_hour_arrival, color = "blue") +
+  geom_vline(xintercept = c(10, 15))
+```
+
 
 ### Basic geographic analysis
 
 ```{r, include=FALSE}
-
-zonas_od = st_read("C:/Users/Lucas/Downloads/OD2017/shapefiles/Zonas_2017_region.shp")
+zonas_od = st_read(file.path(folder, "shapefiles/Zonas_2017_region.shp"))
 tmap_mode("plot")
 
 ```
@@ -173,7 +210,6 @@ tmap_mode("plot")
 Here I plot the main zones of origin and destination using the total number of trips -- always using the survey's expansion factor. It is interesting to note that there is no centrality pattern when we look at the main Zones of Destination. Maybe we should restrict the analysis to specific types of trips (e.g., commute strictly defined). I checked these results with the official Tables and they are the same in terms of the main zones of origin and destination.
 
 ```{r, echo=FALSE}
-
 OD = OD_2017_v1 %>%
   filter(!is.na(modoprin)) %>%
   select(zona_o, zona_d, modoprin, fe_via) %>%
@@ -268,7 +304,6 @@ tm_shape(zonas_od_inter) + tm_fill(c("trips_o", "trips_d"),
             panel.labels = c("Zone of origin", "Zone of destination"),
             legend.outside = TRUE,
             inner.margins = c(0, .02, .02, .02))
-
 
 ```
 
