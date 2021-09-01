@@ -40,26 +40,26 @@ first is based on the “vehicle” itself, and the other relies on the
 
 ![](exploring_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
+Now the A/B Streets classification (foot, bike, car, public transport
+and other):
+
+![](exploring_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
 ### Basic temporal analysis
 
 We can look at the number of trips recorded in different days of the
 week as follows:
 
-    #> # A tibble: 6 × 2
-    #>              dia_sem mean_weight
-    #>            <dbl+lbl>       <dbl>
-    #> 1  2 [Segunda-feira]        270.
-    #> 2  3 [Terça-feira]          264.
-    #> 3  4 [Quarta-feira]         261.
-    #> 4  5 [Quinta-feira]         276.
-    #> 5  6 [Sexta-feira]          263.
-    #> 6 NA                         NA
-
     #> Warning: Removed 1 row(s) containing missing values (geom_path).
 
     #> Warning: Removed 1 row(s) containing missing values (geom_path).
 
-![](exploring_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+Looking at the same graph but taking into account the minutes
+(i.e. using hour as a continuous variable)
+
+![](exploring_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ### Basic geographic analysis
 
@@ -71,22 +71,22 @@ specific types of trips (e.g., commute strictly defined). I checked
 these results with the official Tables and they are the same in terms of
 the main zones of origin and destination.
 
-![](exploring_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 Plotting only the São Paulo City.There is no pattern of spatial
 centrality in destinations either.
 
-![](exploring_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 I then remove the intrazonal trips and plot the same maps to test
 whether these patterns come from intrazonal trips only. It seems that is
 not the case.
 
-![](exploring_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 And the same conclusion applies for São Paulo City…
 
-![](exploring_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 #### Active travels and trip patterns
 
@@ -95,11 +95,11 @@ zoom in the São Paulo City.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 There are still too many zones…
 
     #> Creating centroids representing desire line start and end points.
     #> Legend labels were too wide. Therefore, legend.text.size has been set to 0.47. Increase legend.width (argument of tm_layout) to make the legend wider and therefore the labels larger.
 
-![](exploring_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
