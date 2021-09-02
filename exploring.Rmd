@@ -230,32 +230,6 @@ OD_2017_v1 %>%
 ### Basic temporal analysis
 
 Distributions of trips in the day.
-```{r}
-od_hour = OD_2017_v1 %>% 
-  group_by(h_saida) %>% 
-  summarise(
-    n_trips = n(),
-    mean_weight = mean(fe_via),
-    total_trips = n_trips * mean_weight
-    )
-
-od_hour_arrival = OD_2017_v1 %>% 
-  group_by(h_cheg) %>% 
-  summarise(
-    n_trips = n(),
-    mean_weight = mean(fe_via),
-    total_trips = n_trips * mean_weight
-    )
-
-od_hour %>% 
-  ggplot() +
-  geom_line(aes(h_saida, total_trips)) +
-  geom_line(aes(h_cheg, total_trips), data = od_hour_arrival, color = "blue") +
-  geom_vline(xintercept = c(10, 15))
-
-```
-
-Looking at the same graph but taking into account the minutes (i.e. using hour as a continuous variable)
 
 ```{r, echo=FALSE}
 
@@ -266,9 +240,13 @@ OD_2017_v1 %>%
     chegada = h_cheg + min_cheg/60
   ) %>%
   ggplot() +
-  geom_density(aes(x=saida, weight=fe_via)) +
-  geom_density(aes(x=chegada, weight=fe_via), color="blue") +
-  geom_vline(xintercept = c(10, 15)) +
+  geom_density(aes(x=saida, weight=fe_via, linetype="Saída")) +
+  geom_density(aes(x=chegada, weight=fe_via, linetype="Chegada")) +
+  scale_linetype_manual(name="",
+                        values = c("Saída"="solid", "Chegada"="dashed")) +
+  geom_vline(xintercept = c(10, 15), linetype = "dashed", colour = "red", size = 1) +
+  ylab("Trips (density)") +
+  xlab("Hour") +
   theme_bw()
 
 ```
@@ -391,113 +369,162 @@ destination %>%
 
 ```
 
-I then remove the intrazonal trips and plot the same maps to test whether these patterns come from intrazonal trips only. It seems that is not the case.
-
-```{r, echo=FALSE}
-
-origin_inter = OD %>%
-  filter(zona_o != zona_d) %>%
-  group_by(zona_o) %>%
-  summarise_all(sum) %>%
-  select(zona_o, trips_o = trips)
-
-destination_inter = OD %>%
-  filter(zona_o != zona_d) %>%
-  group_by(zona_d) %>%
-  summarise_all(sum) %>%
-  select(zona_d, trips_d = trips)
-
-zonas_od_inter = zonas_od %>%
-  left_join(origin_inter, by = c("NumeroZona" = "zona_o")) %>%
-  left_join(destination_inter, by=c("NumeroZona" = "zona_d"))
-
-
-tm_shape(zonas_od_inter) + tm_fill(c("trips_o", "trips_d"), 
-                             style = "cont",
-                             title = "Trips")  +
-  tm_facets(free.scales = FALSE, ncol = 1, nrow = 2) +
-  tm_layout(title = "São Paulo Metro Region - Interzones trips",
-            panel.labels = c("Zone of origin", "Zone of destination"),
-            legend.outside = TRUE,
-            inner.margins = c(0, .02, .02, .02))
-
-```
-
-And the same conclusion applies for São Paulo City...
-
-```{r, echo=FALSE}
-
-zonas_od_sp_inter = zonas_od_inter %>%
-  filter(NomeMunici=="São Paulo")
-
-tm_shape(zonas_od_sp_inter) + tm_fill(c("trips_o", "trips_d"),
-                                style = "cont",
-                                title = "Trips"
-                                )  +
-  tm_facets(free.scales = FALSE, ncol = 2) +
-  tm_layout(title = "São Paulo City - Interzones trips",
-            panel.labels = c("Zone of origin", "Zone of destination"),
-            inner.margins = c(0, .02, .02, .02))
-
-
-```
-
 
 #### Active travels and trip patterns
 
-Following the Bristol examples in Robin's book now. But maybe we should zoom in the São Paulo City.
+(I removed the previous visualizations since they were not saying anything about the data.)
+
+Walking and cycling are highly concentrated in few OD pairs (>90% in 1,000 pairs for walking and >90% in 500 pairs for cycling). Car trips are more dispersed, we have >90% of trips in 10,000 pairs. 
+
+```{r, include=FALSE}
+
+bike_pairs = OD %>%
+  select(-time) %>%
+  group_by(zona_o, zona_d) %>%
+  summarise_all(sum) %>%
+  ungroup() %>%
+  mutate(bike_share = (bike/trips)*100) %>%
+  slice_max(bike,
+            n = 500,
+            with_ties = FALSE)
+
+foot_pairs = OD %>%
+  select(-time) %>%
+  group_by(zona_o, zona_d) %>%
+  summarise_all(sum) %>%
+  ungroup() %>%
+  mutate(foot_share = (foot/trips)*100) %>%
+  slice_max(foot,
+            n = 1000,
+            with_ties = FALSE)
+
+car_pairs = OD %>%
+  select(-time) %>%
+  group_by(zona_o, zona_d) %>%
+  summarise_all(sum) %>%
+  ungroup() %>%
+  mutate(car_share = (car/trips)*100) %>%
+  slice_max(car,
+            n = 10000,
+            with_ties = FALSE)
+
+```
+
+Bike trips:
 
 ```{r, echo=FALSE}
 
-od_inter = OD %>%
-  filter(zona_o != zona_d) %>%
-  mutate(
-    active = (bike + foot)/trips * 100
-  )
+desire_lines_bike = od2line(bike_pairs, zonas_od)
 
-desire_lines = od2line(od_inter, zonas_od)
-
-tm_shape(desire_lines) +
-  tm_lines(palette = "plasma", breaks = c(0, 5, 10, 20, 40, 100),
-    lwd = "trips",
-    scale = 9,
-    title.lwd = "Number of trips",
-    alpha = 0.6,
-    col = "active",
-    title = "Active travel (%)"
-  ) +
+tm_shape(desire_lines_bike) +
+  tm_lines(palette = "plasma",
+           breaks = c(0, 10, 25, 50, 75, 100),
+           lwd = "trips",
+           scale = 15,
+           title.lwd = "Number of trips",
+           alpha = 0.8,
+           col = "bike_share",
+           title = "Bike trips (%)") +
+  tm_shape(zonas_od) +
+  tm_borders(col = "lightgrey", lwd = 0.2) +
   tm_scale_bar()
 
 ```
 
-There are still too many zones...
+Foot trips:
 
 ```{r, echo=FALSE}
 
-od_inter_sp = OD %>%
-  left_join(zonas_od, by=c("zona_o" = "NumeroZona")) %>%
-  rename(muni_o = NomeMunici) %>%
-  left_join(zonas_od, by=c("zona_d" = "NumeroZona")) %>%
-  rename(muni_d = NomeMunici) %>%
-  filter(zona_o != zona_d & muni_o == "São Paulo" & muni_d == "São Paulo") %>%
-  mutate(
-    active = (bike + foot)/trips * 100
-  )
+desire_lines_foot = od2line(foot_pairs, zonas_od)
 
-zonas_od_sp = zonas_od %>%
-  filter(NomeMunici == "São Paulo")
-
-desire_lines_sp = od2line(od_inter_sp, zonas_od_sp)
-
-tm_shape(desire_lines_sp) +
-  tm_lines(palette = "plasma", breaks = c(0, 5, 10, 20, 40, 100),
-    lwd = "trips",
-    scale = 9,
-    title.lwd = "Number of trips",
-    alpha = 0.6,
-    col = "active",
-    title = "Active travel (%)"
-  ) +
+tm_shape(desire_lines_foot) +
+  tm_lines(palette = "plasma",
+           breaks = c(0, 10, 25, 50, 75, 100),
+           lwd = "trips",
+           scale = 15,
+           title.lwd = "Number of trips",
+           alpha = 0.8,
+           col = "foot_share",
+           title = "Foot trips (%)") +
+  tm_shape(zonas_od) +
+  tm_borders(col = "lightgrey", lwd = 0.2) +
   tm_scale_bar()
+
+```
+
+Car trips, still too many lines (10,000) to account for >92% of total car trips.
+
+```{r, echo=FALSE}
+
+desire_lines_car = od2line(car_pairs, zonas_od)
+
+tm_shape(desire_lines_car) +
+  tm_lines(palette = "plasma",
+           breaks = c(0, 10, 25, 50, 75, 100),
+           lwd = "trips",
+           scale = 15,
+           title.lwd = "Number of trips",
+           alpha = 0.8,
+           col = "car_share",
+           title = "Car trips (%)") +
+  tm_shape(zonas_od) +
+  tm_borders(col = "lightgrey", lwd = 0.2) +
+  tm_scale_bar()
+
+```
+
+Using the first 5,000 OD pairs, we have >78% of all car trips.
+
+```{r, echo=FALSE}
+
+car_pairs_5 = desire_lines_car %>%
+    slice_max(car,
+              n = 5000,
+              with_ties = FALSE)
+
+
+desire_lines_car = od2line(car_pairs_5, zonas_od)
+
+tm_shape(desire_lines_car) +
+  tm_lines(palette = "plasma",
+           breaks = c(0, 10, 25, 50, 75, 100),
+           lwd = "trips",
+           scale = 15,
+           title.lwd = "Number of trips",
+           alpha = 0.8,
+           col = "car_share",
+           title = "Car trips (%)") +
+  tm_shape(zonas_od) +
+  tm_borders(col = "lightgrey", lwd = 0.2) +
+  tm_scale_bar()
+
+
+```
+
+Using the biggest 1,000 pairs, we have >45% of all car trips.
+
+```{r, echo=FALSE}
+
+car_pairs_1 = desire_lines_car %>%
+    slice_max(car,
+              n = 1000,
+              with_ties = FALSE)
+
+
+desire_lines_car = od2line(car_pairs_1, zonas_od)
+
+tm_shape(desire_lines_car) +
+  tm_lines(palette = "plasma",
+           breaks = c(0, 10, 25, 50, 75, 100),
+           lwd = "trips",
+           scale = 15,
+           title.lwd = "Number of trips",
+           alpha = 0.8,
+           col = "car_share",
+           title = "Car trips (%)") +
+  tm_shape(zonas_od) +
+  tm_borders(col = "lightgrey", lwd = 0.2) +
+  tm_scale_bar()
+
 
 ```
