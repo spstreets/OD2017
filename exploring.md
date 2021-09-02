@@ -56,16 +56,7 @@ average trips’ distance is 5305.0981626.
 
 Distributions of trips in the day.
 
-    #> Warning: Removed 1 row(s) containing missing values (geom_path).
-
-    #> Warning: Removed 1 row(s) containing missing values (geom_path).
-
 ![](exploring_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
-
-Looking at the same graph but taking into account the minutes
-(i.e. using hour as a continuous variable)
-
-![](exploring_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ### Basic geographic analysis (now with times )
 
@@ -79,19 +70,19 @@ the main zones of origin and destination.
 
 Plotting the origin zones by time.
 
-![](exploring_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 Plotting the destination zones by time.
 
-![](exploring_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 Looking at the São Paulo City. First, the origins.
 
-![](exploring_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 Now, the destinations for São Paulo City.
 
-![](exploring_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 #### Active travels and trip patterns
 
@@ -99,36 +90,36 @@ Now, the destinations for São Paulo City.
 anything about the data.)
 
 Walking and cycling are highly concentrated in few OD pairs (&gt;90% in
-1,000 pairs for walking and &gt;90% in 500 pairs for cycling.). Car
-trips are more dispersed, we have &gt;90% of trips in 10,000 pairs.
+1,000 pairs for walking and &gt;90% in 500 pairs for cycling). Car trips
+are more dispersed, we have &gt;90% of trips in 10,000 pairs.
 
 Bike trips:
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 Foot trips:
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 Car trips, still too many lines (10,000) to account for &gt;92% of total
 car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 Using the first 5,000 OD pairs, we have &gt;78% of all car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
 Using the biggest 1,000 pairs, we have &gt;45% of all car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
