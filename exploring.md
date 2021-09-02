@@ -40,28 +40,25 @@ first is based on the “vehicle” itself, and the other relies on the
 
 ![](exploring_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
-### Basic temporal analysis
+Now the A/B Streets classification (foot, bike, car, public transport
+and other):
 
-We can look at the number of trips recorded in different days of the
-week as follows:
+![](exploring_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
-    #> # A tibble: 6 × 2
-    #>              dia_sem mean_weight
-    #>            <dbl+lbl>       <dbl>
-    #> 1  2 [Segunda-feira]        270.
-    #> 2  3 [Terça-feira]          264.
-    #> 3  4 [Quarta-feira]         261.
-    #> 4  5 [Quinta-feira]         276.
-    #> 5  6 [Sexta-feira]          263.
-    #> 6 NA                         NA
+Now the mode share by distance (using the first recategorisation). The
+average trips’ distance is 5305.0981626.
 
-    #> Warning: Removed 1 row(s) containing missing values (geom_path).
-
-    #> Warning: Removed 1 row(s) containing missing values (geom_path).
+    #> `summarise()` has grouped output by 'dist_bands'. You can override using the `.groups` argument.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
-### Basic geographic analysis
+### Basic temporal analysis
+
+Distributions of trips in the day.
+
+![](exploring_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+### Basic geographic analysis (now with times )
 
 Here I plot the main zones of origin and destination using the total
 number of trips – always using the survey’s expansion factor. It is
@@ -71,35 +68,58 @@ specific types of trips (e.g., commute strictly defined). I checked
 these results with the official Tables and they are the same in terms of
 the main zones of origin and destination.
 
-![](exploring_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
-
-Plotting only the São Paulo City.There is no pattern of spatial
-centrality in destinations either.
-
-![](exploring_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
-
-I then remove the intrazonal trips and plot the same maps to test
-whether these patterns come from intrazonal trips only. It seems that is
-not the case.
+Plotting the origin zones by time.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
-And the same conclusion applies for São Paulo City…
+Plotting the destination zones by time.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
-#### Active travels and trip patterns
-
-Following the Bristol examples in Robin’s book now. But maybe we should
-zoom in the São Paulo City.
-
-    #> Creating centroids representing desire line start and end points.
+Looking at the São Paulo City. First, the origins.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
-There are still too many zones…
-
-    #> Creating centroids representing desire line start and end points.
-    #> Legend labels were too wide. Therefore, legend.text.size has been set to 0.47. Increase legend.width (argument of tm_layout) to make the legend wider and therefore the labels larger.
+Now, the destinations for São Paulo City.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+#### Active travels and trip patterns
+
+(I removed the previous visualizations since they were not saying
+anything about the data.)
+
+Walking and cycling are highly concentrated in few OD pairs (&gt;90% in
+1,000 pairs for walking and &gt;90% in 500 pairs for cycling). Car trips
+are more dispersed, we have &gt;90% of trips in 10,000 pairs.
+
+Bike trips:
+
+    #> Creating centroids representing desire line start and end points.
+
+![](exploring_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+
+Foot trips:
+
+    #> Creating centroids representing desire line start and end points.
+
+![](exploring_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
+Car trips, still too many lines (10,000) to account for &gt;92% of total
+car trips.
+
+    #> Creating centroids representing desire line start and end points.
+
+![](exploring_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+
+Using the first 5,000 OD pairs, we have &gt;78% of all car trips.
+
+    #> Creating centroids representing desire line start and end points.
+
+![](exploring_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+
+Using the biggest 1,000 pairs, we have &gt;45% of all car trips.
+
+    #> Creating centroids representing desire line start and end points.
+
+![](exploring_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
