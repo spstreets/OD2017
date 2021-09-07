@@ -14,6 +14,7 @@ library(tidyverse)
 library(sf)
 library(tmap)
 library(stplanr)
+library(osrm)
 
 # assume data is in the folder
 folder = "C:/Users/Lucas/Downloads/OD2017/"
@@ -524,6 +525,142 @@ tm_shape(desire_lines_car) +
            title = "Car trips (%)") +
   tm_shape(zonas_od) +
   tm_borders(col = "lightgrey", lwd = 0.2) +
+  tm_scale_bar()
+
+
+```
+
+
+### Main routes by mode (takes a long time here)
+
+
+```{r, echo=FALSE}
+
+zonas_centroids = zonas_od %>%
+  st_centroid() %>%
+  st_transform(crs = "WGS84") %>%
+  select(NumeroZona)
+
+bike_pairs_inter = bike_pairs %>%   
+  filter(zona_o != zona_d) %>%
+  left_join(zonas_centroids, by = c("zona_o" = "NumeroZona")) %>%
+  rename(origin = geometry) %>%
+  left_join(zonas_centroids, by = c("zona_d" = "NumeroZona")) %>%
+  rename(destination = geometry) %>%
+  mutate(route = NA)
+  
+
+# alguma coisa errada aqui, o plot é muito estranho!
+
+
+for (i in 1:dim(bike_pairs_inter)[1]) {
+      
+  bike_pairs_inter[i, "route"] = osrmRoute(src = st_as_sf(bike_pairs_inter[i, "origin"]),
+                                           dst = st_as_sf(bike_pairs_inter[i, "destination"]),
+                                           overview = "simplified",
+                                           returnclass = "sf",
+                                           osrm.profile = "bike") %>%
+                                 select(geometry)
+    
+}
+
+
+bike_routes = bike_pairs_inter %>%
+  select(-origin, -destination) %>%
+  st_as_sf()
+  
+rm(bike_pairs_inter)
+
+# tm_shape(st_transform(zonas_od, crs = "WGS84")) +    this one does not work (similar reproj prob)
+tm_shape(zonas_od) +                               # this works, but tmap automatically reprojects?
+  tm_borders(col = "lightgrey") +
+  tm_shape(bike_routes) +                          # inverting the order does not workt too
+  tm_lines(lwd = "bike",
+           title.lwd = "# of Bike Trips") +
+  tm_scale_bar()
+
+
+```
+
+
+```{r, echo=FALSE}
+
+car_pairs_inter = car_pairs %>%   
+  filter(zona_o != zona_d) %>%
+  left_join(zonas_centroids, by = c("zona_o" = "NumeroZona")) %>%
+  rename(origin = geometry) %>%
+  left_join(zonas_centroids, by = c("zona_d" = "NumeroZona")) %>%
+  rename(destination = geometry) %>%
+  mutate(route = NA)
+
+
+for (i in 1:dim(car_pairs_inter)[1]) {
+      
+  car_pairs_inter[i, "route"] = osrmRoute(src = st_as_sf(car_pairs_inter[i, "origin"]),
+                                          dst = st_as_sf(car_pairs_inter[i, "destination"]),
+                                          overview = "simplified",
+                                          returnclass = "sf",
+                                          osrm.profile = "car") %>%
+                                 select(geometry)
+    
+}
+
+
+car_routes = car_pairs_inter %>%
+  select(-origin, -destination) %>%
+  st_as_sf()
+  
+rm(car_pairs_inter)
+
+tm_shape(zonas_od) +                               # this works, but tmap automatically reprojects?
+  tm_borders(col = "lightgrey") +
+  tm_shape(car_routes) +                          # inverting the order does not workt too
+  tm_lines(lwd = "car",
+           title.lwd = "# of Car Trips") +
+  tm_scale_bar()
+
+
+```
+
+
+
+
+```{r, echo=FALSE}
+
+
+foot_pairs_inter = foot_pairs %>%   
+  filter(zona_o != zona_d) %>%
+  left_join(zonas_centroids, by = c("zona_o" = "NumeroZona")) %>%
+  rename(origin = geometry) %>%
+  left_join(zonas_centroids, by = c("zona_d" = "NumeroZona")) %>%
+  rename(destination = geometry) %>%
+  mutate(route = NA)
+
+
+for (i in 1:dim(foot_pairs_inter)[1]) {
+      
+  foot_pairs_inter[i, "route"] = osrmRoute(src = st_as_sf(foot_pairs_inter[i, "origin"]),
+                                           dst = st_as_sf(foot_pairs_inter[i, "destination"]),
+                                           overview = "simplified",
+                                           returnclass = "sf",
+                                           osrm.profile = "foot") %>%
+                                 select(geometry)
+    
+}
+
+
+foot_routes = foot_pairs_inter %>%
+  select(-origin, -destination) %>%
+  st_as_sf()
+  
+rm(foot_pairs_inter)
+
+tm_shape(zonas_od) +                               # this works, but tmap automatically reprojects?
+  tm_borders(col = "lightgrey") +
+  tm_shape(foot_routes) +                          # inverting the order does not workt too
+  tm_lines(lwd = "foot",
+           scale = 10,
+           title.lwd = "# of Foot Trips") +
   tm_scale_bar()
 
 
