@@ -13,6 +13,7 @@ knitr::opts_chunk$set(
 library(tidyverse)
 library(sf)
 library(tmap)
+library(leaflet)
 library(stplanr)
 library(osrm)
 
@@ -257,7 +258,7 @@ OD_2017_v1 %>%
 
 ```{r, include=FALSE}
 zonas_od = st_read(file.path(folder, "shapefiles/Zonas_2017_region.shp"))
-tmap_mode("plot")
+tmap_mode("plot")         # mode = view breaks some plots (why? ask Robin)
 
 ```
 
@@ -349,7 +350,6 @@ origin %>%
   tm_layout(title = "São Paulo City",
             inner.margins = c(0, .02, .02, .02),
             legend.outside = TRUE)
-
 
 ```
 
@@ -531,15 +531,25 @@ tm_shape(desire_lines_car) +
 ```
 
 
-### Main routes by mode (takes a long time here)
+### Main routes by mode (takes a long time here) -- rewrite this part.
 
-
-```{r, echo=FALSE}
+```{r}
 
 zonas_centroids = zonas_od %>%
   st_centroid() %>%
   st_transform(crs = "WGS84") %>%
   select(NumeroZona)
+
+sf::sf_use_s2(FALSE)
+
+zonas_od = zonas_od %>%
+  st_transform(crs = "WGS84")
+
+
+```
+
+
+```{r, eval=FALSE}
 
 bike_pairs_inter = bike_pairs %>%   
   filter(zona_o != zona_d) %>%
@@ -551,7 +561,6 @@ bike_pairs_inter = bike_pairs %>%
   
 
 # alguma coisa errada aqui, o plot é muito estranho!
-
 
 for (i in 1:dim(bike_pairs_inter)[1]) {
       
@@ -568,22 +577,15 @@ for (i in 1:dim(bike_pairs_inter)[1]) {
 bike_routes = bike_pairs_inter %>%
   select(-origin, -destination) %>%
   st_as_sf()
+
+saveRDS(bike_routes, file = "bike_routes_2021-09-07.Rds")
   
 rm(bike_pairs_inter)
-
-# tm_shape(st_transform(zonas_od, crs = "WGS84")) +    this one does not work (similar reproj prob)
-tm_shape(zonas_od) +                               # this works, but tmap automatically reprojects?
-  tm_borders(col = "lightgrey") +
-  tm_shape(bike_routes) +                          # inverting the order does not workt too
-  tm_lines(lwd = "bike",
-           title.lwd = "# of Bike Trips") +
-  tm_scale_bar()
-
 
 ```
 
 
-```{r, echo=FALSE}
+```{r, eval=FALSE}
 
 car_pairs_inter = car_pairs %>%   
   filter(zona_o != zona_d) %>%
@@ -609,24 +611,15 @@ for (i in 1:dim(car_pairs_inter)[1]) {
 car_routes = car_pairs_inter %>%
   select(-origin, -destination) %>%
   st_as_sf()
+
+saveRDS(car_routes, file = "car_routes_2021-09-07.Rds")
   
 rm(car_pairs_inter)
-
-tm_shape(zonas_od) +                               # this works, but tmap automatically reprojects?
-  tm_borders(col = "lightgrey") +
-  tm_shape(car_routes) +                          # inverting the order does not workt too
-  tm_lines(lwd = "car",
-           title.lwd = "# of Car Trips") +
-  tm_scale_bar()
-
 
 ```
 
 
-
-
-```{r, echo=FALSE}
-
+```{r, eval=FALSE}
 
 foot_pairs_inter = foot_pairs %>%   
   filter(zona_o != zona_d) %>%
@@ -652,16 +645,59 @@ for (i in 1:dim(foot_pairs_inter)[1]) {
 foot_routes = foot_pairs_inter %>%
   select(-origin, -destination) %>%
   st_as_sf()
+
+saveRDS(foot_routes, file = "foot_routes_2021-09-07.Rds")
   
 rm(foot_pairs_inter)
 
-tm_shape(zonas_od) +                               # this works, but tmap automatically reprojects?
-  tm_borders(col = "lightgrey") +
-  tm_shape(foot_routes) +                          # inverting the order does not workt too
-  tm_lines(lwd = "foot",
-           scale = 10,
-           title.lwd = "# of Foot Trips") +
-  tm_scale_bar()
+```
+
+
+### Routes Networks
+
+Load the routes I scrapped.
+
+```{r, echo=FALSE}
+
+bike_routes = readRDS("bike_routes_2021-09-07.Rds")
+foot_routes = readRDS("foot_routes_2021-09-07.Rds")
+car_routes = readRDS("car_routes_2021-09-07.Rds")
+
+zonas_wgs = zonas_od %>%
+  st_buffer(dist = 0) %>%              # without this step tmap_mode("view") does not work
+  st_transform(crs = "WGS84")
+
+```
+
+
+```{r, eval=FALSE}
+
+route_net_bike = overline(sl = bike_routes, attrib = "bike")
+
+leaflet(route_net_bike) %>% 
+  addProviderTiles(providers$CartoDB.DarkMatter) %>%
+  addPolylines(weight = route_net_bike$bike / 100000, color = "white")
 
 
 ```
+
+```{r, eval=FALSE}
+
+route_net_car = overline(sl = car_routes, attrib = "car")
+
+leaflet(route_net_car) %>% 
+  addProviderTiles(providers$CartoDB.DarkMatter) %>%
+  addPolylines(weight = route_net_car$car / 100000, color = "white")
+
+```
+
+```{r, eval=FALSE}
+
+route_net_foot = overline(sl = foot_routes, attrib = "foot")
+
+leaflet(route_net_foot) %>% 
+  addProviderTiles(providers$CartoDB.DarkMatter) %>%
+  addPolylines(weight = route_net_foot$foot / 100000, color = "white")
+
+```
+

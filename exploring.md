@@ -123,3 +123,17 @@ Using the biggest 1,000 pairs, we have &gt;45% of all car trips.
     #> Creating centroids representing desire line start and end points.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+
+### Main routes by mode (takes a long time here) – rewrite this part.
+
+    #> Warning in st_centroid.sf(.): st_centroid assumes attributes are constant over
+    #> geometries of x
+    #> Spherical geometry (s2) switched off
+
+### Routes Networks
+
+Load the routes I scrapped.
+
+    #> Warning in st_buffer.sfc(st_geometry(x), dist, nQuadSegs, endCapStyle =
+    #> endCapStyle, : st_buffer does not correctly buffer longitude/latitude data
+    #> dist is assumed to be in decimal degrees (arc_degrees).
