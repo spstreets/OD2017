@@ -15,6 +15,7 @@ library(sf)
 library(tmap)
 library(leaflet)
 library(stplanr)
+library(od)
 library(osrm)
 
 # assume data is in the folder
@@ -411,6 +412,7 @@ car_pairs = OD %>%
 
 ```
 
+
 Bike trips:
 
 ```{r, echo=FALSE}
@@ -531,22 +533,39 @@ tm_shape(desire_lines_car) +
 ```
 
 
-### Main routes by mode (takes a long time here) -- rewrite this part.
+### Main routes by mode (takes a long time here) -- rewriting this part.
 
 ```{r}
 
-zonas_centroids = zonas_od %>%
-  st_centroid() %>%
-  st_transform(crs = "WGS84") %>%
-  select(NumeroZona)
+bike_routes = od_jitter(bike_pairs, zonas_od) %>%
+  st_transform(crs = 4326) %>%
+  mutate(route = st_geometry(line2route(.,
+                                        route_fun = route_osrm,
+                                        osrm.profile = "bike",
+                                        time_delay = 1)
+                             )
+         )
 
-sf::sf_use_s2(FALSE)
+st_geometry(bike_routes) = bike_routes$route
 
-zonas_od = zonas_od %>%
-  st_transform(crs = "WGS84")
 
+saveRDS(bike_routes, file = "bike_routes_2021-09-16.Rds")
 
 ```
+
+
+```{r}
+
+route_net_bike = overline(sl = bike_routes, attrib = "bike")
+
+leaflet(route_net_bike) %>% 
+  addProviderTiles(providers$CartoDB.DarkMatter) %>%
+  addPolylines(weight = route_net_bike$bike / 1000, color = "white")
+
+```
+
+
+### Old routes (without intrazone trips)
 
 
 ```{r, eval=FALSE}
@@ -653,7 +672,7 @@ rm(foot_pairs_inter)
 ```
 
 
-### Routes Networks
+### Plotting the routes
 
 Load the routes I scrapped.
 
@@ -662,10 +681,6 @@ Load the routes I scrapped.
 bike_routes = readRDS("bike_routes_2021-09-07.Rds")
 foot_routes = readRDS("foot_routes_2021-09-07.Rds")
 car_routes = readRDS("car_routes_2021-09-07.Rds")
-
-zonas_wgs = zonas_od %>%
-  st_buffer(dist = 0) %>%              # without this step tmap_mode("view") does not work
-  st_transform(crs = "WGS84")
 
 ```
 
@@ -676,8 +691,7 @@ route_net_bike = overline(sl = bike_routes, attrib = "bike")
 
 leaflet(route_net_bike) %>% 
   addProviderTiles(providers$CartoDB.DarkMatter) %>%
-  addPolylines(weight = route_net_bike$bike / 100000, color = "white")
-
+  addPolylines(weight = route_net_bike$bike / 1000, color = "white")
 
 ```
 
@@ -687,7 +701,7 @@ route_net_car = overline(sl = car_routes, attrib = "car")
 
 leaflet(route_net_car) %>% 
   addProviderTiles(providers$CartoDB.DarkMatter) %>%
-  addPolylines(weight = route_net_car$car / 100000, color = "white")
+  addPolylines(weight = route_net_car$car / 10000, color = "white")
 
 ```
 
@@ -697,7 +711,7 @@ route_net_foot = overline(sl = foot_routes, attrib = "foot")
 
 leaflet(route_net_foot) %>% 
   addProviderTiles(providers$CartoDB.DarkMatter) %>%
-  addPolylines(weight = route_net_foot$foot / 100000, color = "white")
+  addPolylines(weight = route_net_foot$foot / 1000, color = "white")
 
 ```
 
