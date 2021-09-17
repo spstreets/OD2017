@@ -631,7 +631,7 @@ car_routes = od_jitter(car_pairs, zonas_od) %>%
   mutate(route = st_geometry(line2route(.,
                                         route_fun = route_osrm,
                                         osrm.profile = "car",
-                                        time_delay = 1)
+                                        time_delay = 0.02)
                              )
          )
 
@@ -651,7 +651,7 @@ Load the routes I scrapped.
 
 bike_routes = readRDS("bike_routes_2021-09-16.Rds")
 foot_routes = readRDS("foot_routes_2021-09-16.Rds")
-car_routes = readRDS("car_routes_2021-09-07.Rds")           # update this later
+car_routes = readRDS("car_routes_2021-09-16.Rds")           # update this later
 
 ```
 
