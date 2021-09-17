@@ -230,17 +230,37 @@ OD_2017_v1 %>%
 ```
 
 
+### [OFF] Checking whether the coordinates are real or just sub-zones centroids.
+
+
+```{r}
+
+n_dom_coords = OD_2017_v1 %>%
+  group_by(co_dom_x, co_dom_y) %>%
+  count()
+
+```
+
+There are `r length(unique(OD_2017_v1$id_dom)) - dim(n_dom_coords)[1]` more households than households' coordinates pairs.
+
+
 ### Basic temporal analysis
 
 Distributions of trips in the day.
 
-```{r, echo=FALSE}
+```{r, fig.cap = "Using `motivo_o`, reason at the origin, to define." echo=FALSE}
 
 OD_2017_v1 %>%
   filter(!is.na(modoprin)) %>%
   mutate(
     saida = h_saida + min_saida/60,
-    chegada = h_cheg + min_cheg/60
+    chegada = h_cheg + min_cheg/60,
+    motivo = case_when(
+      motivo_o %in% 1:3 ~ "Trabalho",
+      motivo_o == 4 ~ "Escola",
+      motivo_o == 8 ~ "Residência",
+      TRUE ~ "Outro"
+    )
   ) %>%
   ggplot() +
   geom_density(aes(x=saida, weight=fe_via, linetype="Saída")) +
@@ -250,6 +270,35 @@ OD_2017_v1 %>%
   geom_vline(xintercept = c(10, 15), linetype = "dashed", colour = "red", size = 1) +
   ylab("Trips (density)") +
   xlab("Hour") +
+  facet_wrap(~motivo) +
+  theme_bw()
+
+```
+
+
+```{r, fig.cap = "Using `motivo_d`, reason at the destination, to define." echo=FALSE}
+
+OD_2017_v1 %>%
+  filter(!is.na(modoprin)) %>%
+  mutate(
+    saida = h_saida + min_saida/60,
+    chegada = h_cheg + min_cheg/60,
+    motivo = case_when(
+      motivo_d %in% 1:3 ~ "Trabalho",
+      motivo_d == 4 ~ "Escola",
+      motivo_d == 8 ~ "Residência",
+      TRUE ~ "Outro"
+    )
+  ) %>%
+  ggplot() +
+  geom_density(aes(x=saida, weight=fe_via, linetype="Saída")) +
+  geom_density(aes(x=chegada, weight=fe_via, linetype="Chegada")) +
+  scale_linetype_manual(name="",
+                        values = c("Saída"="solid", "Chegada"="dashed")) +
+  geom_vline(xintercept = c(10, 15), linetype = "dashed", colour = "red", size = 1) +
+  ylab("Trips (density)") +
+  xlab("Hour") +
+  facet_wrap(~motivo) +
   theme_bw()
 
 ```
@@ -297,7 +346,10 @@ origin = OD %>%
   select(zona_o, time, trips_o = trips) %>%
   ungroup() %>%
   left_join(zonas_od, by = c("zona_o" = "NumeroZona")) %>%
-  st_as_sf(sf_column_name = "geometry")
+  st_as_sf(sf_column_name = "geometry") %>%
+  mutate(area = units::set_units(st_area(.), km^2),
+         trips_o_km2 = as.numeric(trips_o/area)
+         )
 
 destination = OD %>%
   group_by(zona_d, time) %>%
@@ -305,19 +357,22 @@ destination = OD %>%
   select(zona_d, time, trips_d = trips) %>%
   ungroup() %>%
   left_join(zonas_od, by = c("zona_d" = "NumeroZona")) %>%
-  st_as_sf(sf_column_name = "geometry")
-
+  st_as_sf(sf_column_name = "geometry") %>%
+  mutate(area = units::set_units(st_area(.), km^2),
+         trips_d_km2 = as.numeric(trips_d/area)
+         )
+  
 ```
 
 Plotting the origin zones by time.
 
 ```{r, echo=FALSE}
 
-tm_shape(origin) + tm_fill("trips_o", 
+tm_shape(origin) + tm_fill("trips_o_km2", 
                            style = "cont",
-                           title = "Trips' origins")  +
+                           title = "Trips/km²")  +
   tm_facets(by="time", nrow=3) +
-  tm_layout(title = "São Paulo Metro Region",
+  tm_layout(title = "São Paulo Metro Region - Origins",
             inner.margins = c(0, .02, .02, .02),
             legend.outside = TRUE)
 
@@ -327,11 +382,11 @@ Plotting the destination zones by time.
 
 ```{r, echo=FALSE}
 
-tm_shape(destination) + tm_fill("trips_d", 
+tm_shape(destination) + tm_fill("trips_d_km2", 
                                 style = "cont",
-                                title = "Trips' destinations") +
+                                title = "Trips/km²") +
   tm_facets(by="time", nrow=3) +
-  tm_layout(title = "São Paulo Metro Region",
+  tm_layout(title = "São Paulo Metro Region - Destinations",
             inner.margins = c(0, .02, .02, .02),
             legend.outside = TRUE)
 
@@ -344,11 +399,11 @@ Looking at the São Paulo City. First, the origins.
 origin %>%
   filter(NomeMunici == "São Paulo") %>%
   tm_shape() +
-  tm_fill("trips_o",
+  tm_fill("trips_o_km2",
           style = "cont",
-          title = "Trips' origins") +
+          title = "Trips/km²") +
   tm_facets(by="time", ncol=3) +
-  tm_layout(title = "São Paulo City",
+  tm_layout(title = "São Paulo City - Origins",
             inner.margins = c(0, .02, .02, .02),
             legend.outside = TRUE)
 
@@ -361,11 +416,11 @@ Now, the destinations for São Paulo City.
 destination %>%
   filter(NomeMunici == "São Paulo") %>%
   tm_shape() +
-  tm_fill("trips_d",
+  tm_fill("trips_d_km2",
           style = "cont",
-          title = "Trips' destinations") +
+          title = "Trips/km²") +
   tm_facets(by="time", ncol=3) +
-  tm_layout(title = "São Paulo City",
+  tm_layout(title = "São Paulo City - Destinations",
             inner.margins = c(0, .02, .02, .02),
             legend.outside = TRUE)
 
@@ -535,7 +590,7 @@ tm_shape(desire_lines_car) +
 
 ### Main routes by mode (takes a long time here) -- rewriting this part.
 
-```{r}
+```{r, eval=FALSE}
 
 bike_routes = od_jitter(bike_pairs, zonas_od) %>%
   st_transform(crs = 4326) %>%
@@ -548,128 +603,44 @@ bike_routes = od_jitter(bike_pairs, zonas_od) %>%
 
 st_geometry(bike_routes) = bike_routes$route
 
-
 saveRDS(bike_routes, file = "bike_routes_2021-09-16.Rds")
 
 ```
 
+```{r, eval=FALSE}
 
-```{r}
+foot_routes = od_jitter(foot_pairs, zonas_od) %>%
+  st_transform(crs = 4326) %>%
+  mutate(route = st_geometry(line2route(.,
+                                        route_fun = route_osrm,
+                                        osrm.profile = "foot",
+                                        time_delay = 0.5)
+                             )
+         )
 
-route_net_bike = overline(sl = bike_routes, attrib = "bike")
+st_geometry(foot_routes) = foot_routes$route
 
-leaflet(route_net_bike) %>% 
-  addProviderTiles(providers$CartoDB.DarkMatter) %>%
-  addPolylines(weight = route_net_bike$bike / 1000, color = "white")
+saveRDS(foot_routes, file = "foot_routes_2021-09-16.Rds")
 
 ```
-
-
-### Old routes (without intrazone trips)
-
 
 ```{r, eval=FALSE}
 
-bike_pairs_inter = bike_pairs %>%   
-  filter(zona_o != zona_d) %>%
-  left_join(zonas_centroids, by = c("zona_o" = "NumeroZona")) %>%
-  rename(origin = geometry) %>%
-  left_join(zonas_centroids, by = c("zona_d" = "NumeroZona")) %>%
-  rename(destination = geometry) %>%
-  mutate(route = NA)
-  
+car_routes = od_jitter(car_pairs, zonas_od) %>%
+  st_transform(crs = 4326) %>%
+  mutate(route = st_geometry(line2route(.,
+                                        route_fun = route_osrm,
+                                        osrm.profile = "car",
+                                        time_delay = 1)
+                             )
+         )
 
-# alguma coisa errada aqui, o plot é muito estranho!
+st_geometry(car_routes) = car_routes$route
 
-for (i in 1:dim(bike_pairs_inter)[1]) {
-      
-  bike_pairs_inter[i, "route"] = osrmRoute(src = st_as_sf(bike_pairs_inter[i, "origin"]),
-                                           dst = st_as_sf(bike_pairs_inter[i, "destination"]),
-                                           overview = "simplified",
-                                           returnclass = "sf",
-                                           osrm.profile = "bike") %>%
-                                 select(geometry)
-    
-}
-
-
-bike_routes = bike_pairs_inter %>%
-  select(-origin, -destination) %>%
-  st_as_sf()
-
-saveRDS(bike_routes, file = "bike_routes_2021-09-07.Rds")
-  
-rm(bike_pairs_inter)
+saveRDS(car_routes, file = "car_routes_2021-09-16.Rds")
 
 ```
 
-
-```{r, eval=FALSE}
-
-car_pairs_inter = car_pairs %>%   
-  filter(zona_o != zona_d) %>%
-  left_join(zonas_centroids, by = c("zona_o" = "NumeroZona")) %>%
-  rename(origin = geometry) %>%
-  left_join(zonas_centroids, by = c("zona_d" = "NumeroZona")) %>%
-  rename(destination = geometry) %>%
-  mutate(route = NA)
-
-
-for (i in 1:dim(car_pairs_inter)[1]) {
-      
-  car_pairs_inter[i, "route"] = osrmRoute(src = st_as_sf(car_pairs_inter[i, "origin"]),
-                                          dst = st_as_sf(car_pairs_inter[i, "destination"]),
-                                          overview = "simplified",
-                                          returnclass = "sf",
-                                          osrm.profile = "car") %>%
-                                 select(geometry)
-    
-}
-
-
-car_routes = car_pairs_inter %>%
-  select(-origin, -destination) %>%
-  st_as_sf()
-
-saveRDS(car_routes, file = "car_routes_2021-09-07.Rds")
-  
-rm(car_pairs_inter)
-
-```
-
-
-```{r, eval=FALSE}
-
-foot_pairs_inter = foot_pairs %>%   
-  filter(zona_o != zona_d) %>%
-  left_join(zonas_centroids, by = c("zona_o" = "NumeroZona")) %>%
-  rename(origin = geometry) %>%
-  left_join(zonas_centroids, by = c("zona_d" = "NumeroZona")) %>%
-  rename(destination = geometry) %>%
-  mutate(route = NA)
-
-
-for (i in 1:dim(foot_pairs_inter)[1]) {
-      
-  foot_pairs_inter[i, "route"] = osrmRoute(src = st_as_sf(foot_pairs_inter[i, "origin"]),
-                                           dst = st_as_sf(foot_pairs_inter[i, "destination"]),
-                                           overview = "simplified",
-                                           returnclass = "sf",
-                                           osrm.profile = "foot") %>%
-                                 select(geometry)
-    
-}
-
-
-foot_routes = foot_pairs_inter %>%
-  select(-origin, -destination) %>%
-  st_as_sf()
-
-saveRDS(foot_routes, file = "foot_routes_2021-09-07.Rds")
-  
-rm(foot_pairs_inter)
-
-```
 
 
 ### Plotting the routes
@@ -678,9 +649,20 @@ Load the routes I scrapped.
 
 ```{r, echo=FALSE}
 
-bike_routes = readRDS("bike_routes_2021-09-07.Rds")
-foot_routes = readRDS("foot_routes_2021-09-07.Rds")
-car_routes = readRDS("car_routes_2021-09-07.Rds")
+bike_routes = readRDS("bike_routes_2021-09-16.Rds")
+foot_routes = readRDS("foot_routes_2021-09-16.Rds")
+car_routes = readRDS("car_routes_2021-09-07.Rds")           # update this later
+
+```
+
+```{r, echo=FALSE}
+
+bike_paths = st_read(file.path(folder, "SAD69-96_SHP_redecicloviaria/SAD69-96_SHP_redecicloviaria.shp"))
+  
+st_crs(bike_paths) = 5533     
+
+bike_paths = st_transform(bike_paths, 
+                          crs = 4326)
 
 ```
 
@@ -691,6 +673,7 @@ route_net_bike = overline(sl = bike_routes, attrib = "bike")
 
 leaflet(route_net_bike) %>% 
   addProviderTiles(providers$CartoDB.DarkMatter) %>%
+  addPolylines(data = bike_paths, color = "darkgreen", weight = 1) %>%
   addPolylines(weight = route_net_bike$bike / 1000, color = "white")
 
 ```
