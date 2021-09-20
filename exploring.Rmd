@@ -651,7 +651,7 @@ Load the routes I scrapped.
 
 bike_routes = readRDS("bike_routes_2021-09-16.Rds")
 foot_routes = readRDS("foot_routes_2021-09-16.Rds")
-car_routes = readRDS("car_routes_2021-09-16.Rds")           # update this later
+car_routes = readRDS("car_routes_2021-09-16.Rds")           
 
 ```
 
@@ -661,7 +661,7 @@ bike_paths = st_read(file.path(folder, "SAD69-96_SHP_redecicloviaria/SAD69-96_SH
   
 st_crs(bike_paths) = 5533     
 
-bike_paths = st_transform(bike_paths, 
+bike_paths = st_transform(bike_paths,
                           crs = 4326)
 
 ```
@@ -680,7 +680,7 @@ leaflet(route_net_bike) %>%
 
 ```{r, eval=FALSE}
 
-route_net_car = overline(sl = car_routes, attrib = "car")
+route_net_car = overline(sl = car_routes, regionalise = 9e99, attrib = "car")
 
 leaflet(route_net_car) %>% 
   addProviderTiles(providers$CartoDB.DarkMatter) %>%
@@ -690,11 +690,11 @@ leaflet(route_net_car) %>%
 
 ```{r, eval=FALSE}
 
-route_net_foot = overline(sl = foot_routes, attrib = "foot")
+route_net_foot = overline(sl = foot_routes, regionalise = 9e99, attrib = "foot")
 
 leaflet(route_net_foot) %>% 
   addProviderTiles(providers$CartoDB.DarkMatter) %>%
-  addPolylines(weight = route_net_foot$foot / 1000, color = "white")
+  addPolylines(weight = route_net_foot$foot / 10000, color = "white")
 
 ```
 
