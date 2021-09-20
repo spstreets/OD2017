@@ -645,7 +645,7 @@ saveRDS(car_routes, file = "car_routes_2021-09-16.Rds")
 
 ### Plotting the routes
 
-Load the routes I scrapped.
+Load the routes I calculated.
 
 ```{r, echo=FALSE}
 
