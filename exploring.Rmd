@@ -248,7 +248,7 @@ There are `r length(unique(OD_2017_v1$id_dom)) - dim(n_dom_coords)[1]` more hous
 
 Distributions of trips in the day.
 
-```{r, fig.cap = "Using `motivo_o`, reason at the origin, to define." echo=FALSE}
+```{r, echo=FALSE, fig.cap = "Using `motivo_o`, reason at the origin, to define."}
 
 OD_2017_v1 %>%
   filter(!is.na(modoprin)) %>%
@@ -276,7 +276,7 @@ OD_2017_v1 %>%
 ```
 
 
-```{r, fig.cap = "Using `motivo_d`, reason at the destination, to define." echo=FALSE}
+```{r, echo=FALSE, fig.cap = "Using `motivo_d`, reason at the destination, to define."}
 
 OD_2017_v1 %>%
   filter(!is.na(modoprin)) %>%
@@ -673,7 +673,7 @@ route_net_bike = overline(sl = bike_routes, attrib = "bike")
 
 leaflet(route_net_bike) %>% 
   addProviderTiles(providers$CartoDB.DarkMatter) %>%
-  addPolylines(data = bike_paths, color = "darkgreen", weight = 1) %>%
+  addPolylines(data = bike_paths, color = "green", weight = 1) %>%
   addPolylines(weight = route_net_bike$bike / 1000, color = "white")
 
 ```

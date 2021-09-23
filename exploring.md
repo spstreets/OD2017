@@ -52,11 +52,19 @@ average trips’ distance is 5305.0981626.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
+### \[OFF\] Checking whether the coordinates are real or just sub-zones centroids.
+
+There are 3487 more households than households’ coordinates pairs.
+
 ### Basic temporal analysis
 
 Distributions of trips in the day.
 
-![](exploring_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![Using `motivo_o`, reason at the origin, to
+define.](exploring_files/figure-gfm/unnamed-chunk-9-1.png)
+
+![Using `motivo_d`, reason at the destination, to
+define.](exploring_files/figure-gfm/unnamed-chunk-10-1.png)
 
 ### Basic geographic analysis (now with times )
 
@@ -70,19 +78,19 @@ the main zones of origin and destination.
 
 Plotting the origin zones by time.
 
-![](exploring_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 Plotting the destination zones by time.
 
-![](exploring_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 Looking at the São Paulo City. First, the origins.
 
-![](exploring_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 Now, the destinations for São Paulo City.
 
-![](exploring_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 #### Active travels and trip patterns
 
@@ -97,43 +105,44 @@ Bike trips:
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 Foot trips:
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
 Car trips, still too many lines (10,000) to account for &gt;92% of total
 car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
 Using the first 5,000 OD pairs, we have &gt;78% of all car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 Using the biggest 1,000 pairs, we have &gt;45% of all car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
-### Main routes by mode (takes a long time here) – rewrite this part.
+### Main routes by mode (takes a long time here) – rewriting this part.
 
-    #> Warning in st_centroid.sf(.): st_centroid assumes attributes are constant over
-    #> geometries of x
-    #> Spherical geometry (s2) switched off
+### Plotting the routes
 
-### Routes Networks
+Load the routes I calculated.
 
-Load the routes I scrapped.
-
-    #> Warning in st_buffer.sfc(st_geometry(x), dist, nQuadSegs, endCapStyle =
-    #> endCapStyle, : st_buffer does not correctly buffer longitude/latitude data
-    #> dist is assumed to be in decimal degrees (arc_degrees).
+    #> Reading layer `SAD69-96_SHP_redecicloviaria' from data source 
+    #>   `C:\Users\Lucas\Downloads\OD2017\SAD69-96_SHP_redecicloviaria\SAD69-96_SHP_redecicloviaria.shp' 
+    #>   using driver `ESRI Shapefile'
+    #> Simple feature collection with 1931 features and 4 fields
+    #> Geometry type: LINESTRING
+    #> Dimension:     XY
+    #> Bounding box:  xmin: 315787.6 ymin: 7360870 xmax: 357141.3 ymax: 7407167
+    #> CRS:           NA
