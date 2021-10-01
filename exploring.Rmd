@@ -698,3 +698,66 @@ leaflet(route_net_foot) %>%
 
 ```
 
+### Infrastructure data (São Paulo municipality only)
+
+```{r, echo=FALSE}
+
+OD_sp = OD_2017_v1 %>%
+  filter(!is.na(modoprin) &
+           (muni_d == 36 | muni_o == 36)
+         ) %>%
+  select(zona_o, zona_d, modoprin, fe_via) %>%
+  mutate(
+    public = ifelse(modoprin %in% 1:6, 1, 0)*fe_via,
+    car = ifelse(modoprin %in% 9:10, 1, 0)*fe_via,
+    motorcycle = ifelse(modoprin %in% 13:14, 1, 0)*fe_via,
+    bike = ifelse(modoprin == 15, 1, 0)*fe_via,
+    foot = ifelse(modoprin == 16, 1, 0)*fe_via,
+    other = ifelse(modoprin %in% c(7, 8, 11, 12, 17), 1, 0)*fe_via) %>%
+  select(zona_o, zona_d, public, car, motorcycle, bike, foot, other) %>%
+  group_by(zona_o, zona_d) %>%
+  summarise_all(sum) %>%
+  ungroup() %>%
+  mutate(trips = public + car + motorcycle + bike + foot + other)
+
+```
+
+```{r, echo=FALSE}
+# I have two identical geometries in each route dataframe
+car_routes$route = NULL
+bike_routes$route = NULL
+foot_routes$route = NULL
+
+bike_routes$tot_length = (units::set_units(st_length(bike_routes), km))*bike_routes$bike
+car_routes$tot_length = (units::set_units(st_length(car_routes), km))*car_routes$car
+foot_routes$tot_length = (units::set_units(st_length(foot_routes), km))*foot_routes$foot
+
+```
+
+```{r}
+
+od_zones = st_read(file.path(folder, "shapefiles/Zonas_2017_region.shp")) %>%
+  filter(NomeMunici == "São Paulo") %>%
+  st_buffer(dist = 0) %>%
+  st_transform(4326) %>%
+  st_make_valid()
+
+sw <- st_read(file.path(folder,"Poligonos_calcadas/Calcadas_SP.shp")) %>%
+  st_buffer(dist = 0) %>%
+  st_transform(4326) %>%
+  st_make_valid()
+
+streets <- st_read(file.path(folder,"Poligonos_vias/Poligonos_vias_total.gpkg")) %>%
+  st_transform(4326)
+
+```
+
+
+
+
+
+
+
+
+
+
