@@ -11,6 +11,7 @@ knitr::opts_chunk$set(
 )
 
 library(tidyverse)
+library(piggyback)
 library(sf)
 library(tmap)
 library(leaflet)
@@ -19,9 +20,15 @@ library(od)
 library(osrm)
 
 # assume data is in the folder
-folder = "C:/Users/Lucas/Downloads/OD2017/"
+folder = "/home/lucas/"
+
+pb_download(repo = "spstreets/OD2017",
+            tag = "1",
+            dest = "..")
+
 # folder = "~/hd/data/project-data/spshared/"
-load(file.path(folder, "OD2017.rda"))
+# load(file.path(folder, "OD2017.rda"))
+OD_2017_v1 = readRDS("~/OD_2017_v1.Rds")
 
 ```
 
@@ -649,15 +656,17 @@ Load the routes I calculated.
 
 ```{r, echo=FALSE}
 
-bike_routes = readRDS("bike_routes_2021-09-16.Rds")
-foot_routes = readRDS("foot_routes_2021-09-16.Rds")
-car_routes = readRDS("car_routes_2021-09-16.Rds")           
+bike_routes = readRDS("~/bike_routes_2021-09-16.Rds")
+foot_routes = readRDS("~/foot_routes_2021-09-16.Rds")
+car_routes = readRDS("~/car_routes_2021-09-16.Rds")           
 
 ```
 
+something wrong here, check later...
+
 ```{r, echo=FALSE}
 
-bike_paths = st_read(file.path(folder, "SAD69-96_SHP_redecicloviaria/SAD69-96_SHP_redecicloviaria.shp"))
+bike_paths = st_read("~/SAD69-96_SHP_redecicloviaria/SAD69-96_SHP_redecicloviaria.shp")
   
 st_crs(bike_paths) = 5533     
 
@@ -698,13 +707,14 @@ leaflet(route_net_foot) %>%
 
 ```
 
+
 ### Infrastructure data (São Paulo municipality only)
 
 ```{r, echo=FALSE}
 
 OD_sp = OD_2017_v1 %>%
   filter(!is.na(modoprin) &
-           (muni_d == 36 | muni_o == 36)
+           (muni_d == 36 & muni_o == 36)
          ) %>%
   select(zona_o, zona_d, modoprin, fe_via) %>%
   mutate(
@@ -713,7 +723,8 @@ OD_sp = OD_2017_v1 %>%
     motorcycle = ifelse(modoprin %in% 13:14, 1, 0)*fe_via,
     bike = ifelse(modoprin == 15, 1, 0)*fe_via,
     foot = ifelse(modoprin == 16, 1, 0)*fe_via,
-    other = ifelse(modoprin %in% c(7, 8, 11, 12, 17), 1, 0)*fe_via) %>%
+    other = ifelse(modoprin %in% c(7, 8, 11, 12, 17), 1, 0)*fe_via
+    ) %>%
   select(zona_o, zona_d, public, car, motorcycle, bike, foot, other) %>%
   group_by(zona_o, zona_d) %>%
   summarise_all(sum) %>%
@@ -734,30 +745,84 @@ foot_routes$tot_length = (units::set_units(st_length(foot_routes), km))*foot_rou
 
 ```
 
-```{r}
+```{r, echo=FALSE}
 
-od_zones = st_read(file.path(folder, "shapefiles/Zonas_2017_region.shp")) %>%
-  filter(NomeMunici == "São Paulo") %>%
+od_zones = st_read(file.path(folder, "Zonas_OD2017/Zonas_2017_region.shp"),
+                   options = "ENCODING=LATIN1") %>%
+  filter(NumeroMuni == 36) %>%
   st_buffer(dist = 0) %>%
   st_transform(4326) %>%
   st_make_valid()
 
-sw <- st_read(file.path(folder,"Poligonos_calcadas/Calcadas_SP.shp")) %>%
+sw = st_read(file.path(folder,"Poligonos_calcadas/Calcadas_SP.shp")) %>%
   st_buffer(dist = 0) %>%
   st_transform(4326) %>%
   st_make_valid()
 
-streets <- st_read(file.path(folder,"Poligonos_vias/Poligonos_vias_total.gpkg")) %>%
-  st_transform(4326)
+streets = st_read(file.path(folder,"Poligonos_vias/Poligonos_vias_total.gpkg")) %>%
+  st_buffer(dist = 0) %>%
+  st_transform(4326) %>%
+  st_make_valid()
+
+area_sw = sw %>%
+  st_intersection(od_zones) %>%
+  mutate(area_sw = units::set_units(st_area(.), km^2)
+         ) %>%
+  select(NumeroZona, area_sw) %>%
+  st_drop_geometry() %>%
+  group_by(NumeroZona) %>%
+  summarise_all(sum)
+
+area_streets = streets %>%
+  st_intersection(od_zones) %>%
+  mutate(area_streets = units::set_units(st_area(.), km^2)
+         ) %>%
+  select(NumeroZona, area_streets) %>%
+  st_drop_geometry() %>%
+  group_by(NumeroZona) %>%
+  summarise_all(sum)
 
 ```
 
+```{r, echo=FALSE}
 
+foot_routes %>%
+  filter(
+    (zona_o %in% unique(OD_sp$zona_o)) & (zona_d %in% unique(OD_sp$zona_d))
+    ) %>%
+  left_join(area_sw, by = c("zona_o" = "NumeroZona")) %>%
+  rename(sw_o = area_sw) %>%
+  left_join(area_sw, by = c("zona_d" = "NumeroZona")) %>%
+  rename(sw_d = area_sw) %>%
+  ggplot(aes(x = log(as.numeric(0.5*sw_o+0.5*sw_d)),
+             y = log(as.numeric(tot_length))
+             )
+         ) +
+  geom_point() +
+  xlab("log(OD mean sidewalk area)") +
+  ylab("log(total km walked OD pair)") +
+  theme_bw()
 
+```
 
+```{r, echo=FALSE}
 
+car_routes %>%
+  filter(
+    (zona_o %in% unique(OD_sp$zona_o)) & (zona_d %in% unique(OD_sp$zona_d))
+    ) %>%
+  left_join(area_streets, by = c("zona_o" = "NumeroZona")) %>%
+  rename(streets_o = area_streets) %>%
+  left_join(area_streets, by = c("zona_d" = "NumeroZona")) %>%
+  rename(streets_d = area_streets) %>%
+  ggplot(aes(x = log(as.numeric(0.5*streets_o+0.5*streets_d)),
+             y = log(as.numeric(tot_length))
+             )
+         ) +
+  geom_point() +
+  xlab("log(OD mean streets area)") +
+  ylab("log(total km drived in OD pair)") +
+  theme_bw()
 
-
-
-
+```
 
