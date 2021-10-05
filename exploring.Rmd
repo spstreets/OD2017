@@ -18,10 +18,10 @@ library(leaflet)
 library(stplanr)
 library(od)
 library(osrm)
-
 # assume data is in the folder
 # folder = "/home/lucas/"
-folder = "~/Dropbox/DATA/"
+# folder = "~/Dropbox/DATA/"
+folder = "~/hd/data/project-data/spshared/"
 
 pb_download(repo = "spstreets/OD2017",
             tag = "1",
@@ -315,8 +315,16 @@ OD_2017_v1 %>%
 ### Basic geographic analysis (now with times  )
 
 ```{r, include=FALSE}
-zonas_od = st_read(file.path(folder, "Zonas_OD2017/Zonas_2017_region.shp"),
-                   options = "ENCODING=LATIN1")
+# # list.files(folder)
+# zonas_od = st_read("~/hd/data/project-data/spshared//shapefiles/Zonas_2017_region.shp")
+# zonas_od = st_read(file.path(folder, "shapefiles/Zonas_OD2017/Zonas_2017_region.shp")
+#                    , options = "ENCODING=LATIN1"
+#                    )
+# sf::st_write(zonas_od, "zonas_od.gpkg")
+# piggyback::pb_upload("zonas_od.gpkg")
+# zonas_od = sf::read_sf("zonas_od.gpkg")
+# piggyback::pb_download("zonas_od.Rds")
+zonas_od = readRDS("zonas_od.Rds")
 tmap_mode("plot")         # mode = view breaks some plots (why? ask Robin)
 
 ```
@@ -657,29 +665,28 @@ saveRDS(car_routes, file = "car_routes_2021-09-16.Rds")
 Load the routes I calculated.
 
 ```{r, echo=FALSE}
-
-bike_routes = readRDS("~/bike_routes_2021-09-16.Rds")
-foot_routes = readRDS("~/foot_routes_2021-09-16.Rds")
-car_routes = readRDS("~/car_routes_2021-09-16.Rds")           
-
+piggyback::pb_download("bike_routes_2021-09-16.Rds")
+bike_routes = readRDS("bike_routes_2021-09-16.Rds")
+foot_routes = readRDS("foot_routes_2021-09-16.Rds")
+car_routes = readRDS("car_routes_2021-09-16.Rds")           
 ```
 
 something wrong here, check later...
 
 ```{r, eval=FALSE}
-
-bike_paths = st_read("~/SAD69-96_SHP_redecicloviaria/SAD69-96_SHP_redecicloviaria.shp")
-  
-st_crs(bike_paths) = 5533     
-
-bike_paths = st_transform(bike_paths,
-                          crs = 4326)
-
+# remotes::install_cran("archive")
+# archive::archive("SAD69-96_SHP_redecicloviaria.rar") # fails
+# unrar SAD69-96_SHP_redecicloviaria.rar = bash command
+# bike_paths = st_read("SAD69-96_SHP_redecicloviaria.shp")
+# st_crs(bike_paths) = 5533     
+# bike_paths = st_transform(bike_paths, crs = 4326)
+# sf::write_sf(bike_paths, "bike_paths.gpkg")
+# piggyback::pb_upload("bike_paths.gpkg")
+bike_paths = read_sf("bike_paths.gpkg")
 ```
 
 
 ```{r, eval=FALSE}
-
 route_net_bike = overline(sl = bike_routes, attrib = "bike")
 
 leaflet(route_net_bike) %>% 
@@ -749,42 +756,46 @@ foot_routes$tot_length = (units::set_units(st_length(foot_routes), km))*foot_rou
 
 obs.: very strange behavior here: st_buffer + st_make_valid makes one single polygon very small. without st_buffer, R does not even plot -- "C stack usage too close to ...". These operations seems to be necessary in the other geometries. 
 ```{r, echo=FALSE}
+# 
+# od_zones = st_read(file.path(folder, "Zonas_OD2017/Zonas_2017_region.shp"),  
+#                    options = "ENCODING=LATIN1") %>%     
+#   filter(NumeroMuni == 36) %>%
+# #  st_buffer(dist = 0) %>%
+#   st_transform(4326) %>%
+#   st_make_valid()
+od_zones = zonas_od
 
-od_zones = st_read(file.path(folder, "Zonas_OD2017/Zonas_2017_region.shp"),  
-                   options = "ENCODING=LATIN1") %>%     
-  filter(NumeroMuni == 36) %>%
-#  st_buffer(dist = 0) %>%
-  st_transform(4326) %>%
-  st_make_valid()
+# Calcadas_SP = st_read(file.path(folder,"Poligonos_calcadas/Calcadas_SP.shp"))
+# sw = Calcadas_SP %>%  # sidewalks
+#   st_buffer(dist = 0) %>%
+#   st_transform(4326) %>%
+#   st_make_valid()
+# saveRDS(sw, "sw.Rds")
+# sf::write_sf(sw, "sw.gpkg")
+sw = readRDS("sw.Rds")
 
-Calcadas_SP = st_read(file.path(folder,"Poligonos_calcadas/Calcadas_SP.shp"))
-sw = Calcadas_SP %>%  # sidewalks
-  st_buffer(dist = 0) %>%
-  st_transform(4326) %>%
-  st_make_valid()
-
-streets = st_read(file.path(folder,"Poligonos_vias/Poligonos_vias_total.gpkg")) %>%  # streets
-  st_buffer(dist = 0) %>%
-  st_transform(4326) %>%
-  st_make_valid()
-
-area_sw = sw %>%
-  st_intersection(od_zones) %>%
-  mutate(area_sw = units::set_units(st_area(.), km^2)
-         ) %>%
-  select(NumeroZona, area_sw) %>%
-  st_drop_geometry() %>%
-  group_by(NumeroZona) %>%
-  summarise_all(sum)
-
-area_streets = streets %>%
-  st_intersection(od_zones) %>%
-  mutate(area_streets = units::set_units(st_area(.), km^2)
-         ) %>%
-  select(NumeroZona, area_streets) %>%
-  st_drop_geometry() %>%
-  group_by(NumeroZona) %>%
-  summarise_all(sum)
+# streets = st_read(file.path(folder,"Poligonos_vias/Poligonos_vias_total.gpkg")) %>%  # streets
+#   st_buffer(dist = 0) %>%
+#   st_transform(4326) %>%
+#   st_make_valid()
+# 
+# area_sw = sw %>%
+#   st_intersection(od_zones) %>%
+#   mutate(area_sw = units::set_units(st_area(.), km^2)
+#          ) %>%
+#   select(NumeroZona, area_sw) %>%
+#   st_drop_geometry() %>%
+#   group_by(NumeroZona) %>%
+#   summarise_all(sum)
+# 
+# area_streets = streets %>%
+#   st_intersection(od_zones) %>%
+#   mutate(area_streets = units::set_units(st_area(.), km^2)
+#          ) %>%
+#   select(NumeroZona, area_streets) %>%
+#   st_drop_geometry() %>%
+#   group_by(NumeroZona) %>%
+#   summarise_all(sum)
 
 ```
 
