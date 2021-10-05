@@ -757,7 +757,8 @@ od_zones = st_read(file.path(folder, "Zonas_OD2017/Zonas_2017_region.shp"),
   st_transform(4326) %>%
   st_make_valid()
 
-sw = st_read(file.path(folder,"Poligonos_calcadas/Calcadas_SP.shp")) %>%  # sidewalks
+Calcadas_SP = st_read(file.path(folder,"Poligonos_calcadas/Calcadas_SP.shp"))
+sw = Calcadas_SP %>%  # sidewalks
   st_buffer(dist = 0) %>%
   st_transform(4326) %>%
   st_make_valid()
