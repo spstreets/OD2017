@@ -20,15 +20,16 @@ library(od)
 library(osrm)
 
 # assume data is in the folder
-folder = "/home/lucas/"
+# folder = "/home/lucas/"
+folder = "~/Dropbox/DATA/"
 
 pb_download(repo = "spstreets/OD2017",
             tag = "1",
-            dest = "..")
+            dest = ".")
 
 # folder = "~/hd/data/project-data/spshared/"
 # load(file.path(folder, "OD2017.rda"))
-OD_2017_v1 = readRDS("~/OD_2017_v1.Rds")
+OD_2017_v1 = readRDS("OD_2017_v1.Rds")
 
 ```
 
