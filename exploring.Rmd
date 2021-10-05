@@ -314,7 +314,8 @@ OD_2017_v1 %>%
 ### Basic geographic analysis (now with times  )
 
 ```{r, include=FALSE}
-zonas_od = st_read(file.path(folder, "shapefiles/Zonas_2017_region.shp"))
+zonas_od = st_read(file.path(folder, "Zonas_OD2017/Zonas_2017_region.shp"),
+                   options = "ENCODING=LATIN1")
 tmap_mode("plot")         # mode = view breaks some plots (why? ask Robin)
 
 ```
@@ -664,7 +665,7 @@ car_routes = readRDS("~/car_routes_2021-09-16.Rds")
 
 something wrong here, check later...
 
-```{r, echo=FALSE}
+```{r, eval=FALSE}
 
 bike_paths = st_read("~/SAD69-96_SHP_redecicloviaria/SAD69-96_SHP_redecicloviaria.shp")
   
@@ -682,7 +683,7 @@ route_net_bike = overline(sl = bike_routes, attrib = "bike")
 
 leaflet(route_net_bike) %>% 
   addProviderTiles(providers$CartoDB.DarkMatter) %>%
-  addPolylines(data = bike_paths, color = "green", weight = 1) %>%
+#  addPolylines(data = bike_paths, color = "green", weight = 1) %>%
   addPolylines(weight = route_net_bike$bike / 1000, color = "white")
 
 ```
@@ -752,8 +753,8 @@ od_zones = st_read(file.path(folder, "Zonas_OD2017/Zonas_2017_region.shp"),
                    options = "ENCODING=LATIN1") %>%     
   filter(NumeroMuni == 36) %>%
 #  st_buffer(dist = 0) %>%
-  st_transform(4326) 
-#  st_make_valid()
+  st_transform(4326) %>%
+  st_make_valid()
 
 sw = st_read(file.path(folder,"Poligonos_calcadas/Calcadas_SP.shp")) %>%  # sidewalks
   st_buffer(dist = 0) %>%

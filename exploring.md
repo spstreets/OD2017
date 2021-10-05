@@ -5,7 +5,7 @@ I create this separated document to be the main reference on the
 exploratory data analysis. The data set is at the trip level and I take
 advantage of the survey design and use the expansion factor (for the
 trips) in all the graphs and analysis here. The survey implies that
-there are 4.200666^{7} trips/day in the São Paulo Metro Region.
+there are 4.20066610^{7} trips/day in the São Paulo Metro Region.
 
 ### Key variables
 
@@ -48,7 +48,7 @@ and other):
 Now the mode share by distance (using the first recategorisation). The
 average trips’ distance is 5305.0981626.
 
-    #> `summarise()` has grouped output by 'dist_bands'. You can override using the `.groups` argument.
+    #> `summarise()` regrouping output by 'dist_bands' (override with `.groups` argument)
 
 ![](exploring_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
@@ -97,9 +97,9 @@ Now, the destinations for São Paulo City.
 (I removed the previous visualizations since they were not saying
 anything about the data.)
 
-Walking and cycling are highly concentrated in few OD pairs (&gt;90% in
-1,000 pairs for walking and &gt;90% in 500 pairs for cycling). Car trips
-are more dispersed, we have &gt;90% of trips in 10,000 pairs.
+Walking and cycling are highly concentrated in few OD pairs (\>90% in
+1,000 pairs for walking and \>90% in 500 pairs for cycling). Car trips
+are more dispersed, we have \>90% of trips in 10,000 pairs.
 
 Bike trips:
 
@@ -113,20 +113,20 @@ Foot trips:
 
 ![](exploring_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
-Car trips, still too many lines (10,000) to account for &gt;92% of total
+Car trips, still too many lines (10,000) to account for \>92% of total
 car trips.
 
     #> Creating centroids representing desire line start and end points.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
-Using the first 5,000 OD pairs, we have &gt;78% of all car trips.
+Using the first 5,000 OD pairs, we have \>78% of all car trips.
 
     #> Creating centroids representing desire line start and end points.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
-Using the biggest 1,000 pairs, we have &gt;45% of all car trips.
+Using the biggest 1,000 pairs, we have \>45% of all car trips.
 
     #> Creating centroids representing desire line start and end points.
 
@@ -138,11 +138,52 @@ Using the biggest 1,000 pairs, we have &gt;45% of all car trips.
 
 Load the routes I calculated.
 
-    #> Reading layer `SAD69-96_SHP_redecicloviaria' from data source 
-    #>   `C:\Users\Lucas\Downloads\OD2017\SAD69-96_SHP_redecicloviaria\SAD69-96_SHP_redecicloviaria.shp' 
-    #>   using driver `ESRI Shapefile'
-    #> Simple feature collection with 1931 features and 4 fields
-    #> Geometry type: LINESTRING
-    #> Dimension:     XY
-    #> Bounding box:  xmin: 315787.6 ymin: 7360870 xmax: 357141.3 ymax: 7407167
-    #> CRS:           NA
+something wrong here, check later…
+
+### Infrastructure data (São Paulo municipality only)
+
+obs.: very strange behavior here: st\_buffer + st\_make\_valid makes one
+single polygon very small. without st\_buffer, R does not even plot – “C
+stack usage too close to …”. These operations seems to be necessary in
+the other geometries.
+
+    #> options:        ENCODING=LATIN1 
+    #> Reading layer `Zonas_2017_region' from data source `/home/lucas/Zonas_OD2017/Zonas_2017_region.shp' using driver `ESRI Shapefile'
+    #> Simple feature collection with 517 features and 7 fields
+    #> geometry type:  MULTIPOLYGON
+    #> dimension:      XYZ
+    #> bbox:           xmin: 275295.9 ymin: 7337234 xmax: 429153.6 ymax: 7435608
+    #> z_range:        zmin: 0 zmax: 0
+    #> projected CRS:  Corrego Alegre 1970-72 / UTM zone 23S
+    #> Reading layer `Calcadas_SP' from data source `/home/lucas/Poligonos_calcadas/Calcadas_SP.shp' using driver `ESRI Shapefile'
+    #> Simple feature collection with 491383 features and 15 fields
+    #> geometry type:  POLYGON
+    #> dimension:      XY
+    #> bbox:           xmin: 314656.4 ymin: 7346966 xmax: 360614.9 ymax: 7414209
+    #> projected CRS:  SIRGAS 2000 / UTM zone 23S
+    #> Reading layer `Poligonos_vias_total' from data source `/home/lucas/Poligonos_vias/Poligonos_vias_total.gpkg' using driver `GPKG'
+    #> Simple feature collection with 230816 features and 10 fields
+    #> geometry type:  POLYGON
+    #> dimension:      XY
+    #> bbox:           xmin: 313439.6 ymin: 7344106 xmax: 360592.5 ymax: 7416142
+    #> projected CRS:  SIRGAS 2000 / UTM zone 23S
+    #> although coordinates are longitude/latitude, st_intersection assumes that they are planar
+    #> Warning: attribute variables are assumed to be spatially constant throughout all
+    #> geometries
+    #> although coordinates are longitude/latitude, st_intersection assumes that they are planar
+    #> Warning: attribute variables are assumed to be spatially constant throughout all
+    #> geometries
+
+![](exploring_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+
+OD pairs that generate the most intensive usage of space (kms traveled
+in the routes) have more area allocated to the transport mode (both foot
+and car)
+
+Very strong pattern here.
+
+![](exploring_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
+
+Some outliers in this graph, may be worth to check later…
+
+![](exploring_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
