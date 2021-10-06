@@ -805,7 +805,7 @@ streets = readRDS("streets.Rds")
 
 ```{r, echo=FALSE}
 
-od_zones = od_zones %>%
+od_zones = od_zones_sp %>%
   left_join(area_streets, by = c("NumeroZona")) %>%
   left_join(area_sw, by = c("NumeroZona")) %>%
   mutate(area = st_area(.),
