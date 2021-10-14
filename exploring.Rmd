@@ -11,17 +11,25 @@ knitr::opts_chunk$set(
 )
 
 library(tidyverse)
+library(piggyback)
 library(sf)
 library(tmap)
 library(leaflet)
 library(stplanr)
 library(od)
 library(osrm)
-
 # assume data is in the folder
-folder = "C:/Users/Lucas/Downloads/OD2017/"
+ folder = "/home/lucas/"
+# folder = "~/Dropbox/DATA/"
 # folder = "~/hd/data/project-data/spshared/"
-load(file.path(folder, "OD2017.rda"))
+
+pb_download(repo = "spstreets/OD2017",
+            tag = "1",
+            dest = ".")
+
+# folder = "~/hd/data/project-data/spshared/"
+# load(file.path(folder, "OD2017.rda"))
+OD_2017_v1 = readRDS("OD_2017_v1.Rds")
 
 ```
 
@@ -307,7 +315,16 @@ OD_2017_v1 %>%
 ### Basic geographic analysis (now with times  )
 
 ```{r, include=FALSE}
-zonas_od = st_read(file.path(folder, "shapefiles/Zonas_2017_region.shp"))
+# # list.files(folder)
+# zonas_od = st_read("~/hd/data/project-data/spshared//shapefiles/Zonas_2017_region.shp")
+# zonas_od = st_read(file.path(folder, "shapefiles/Zonas_OD2017/Zonas_2017_region.shp")
+#                    , options = "ENCODING=LATIN1"
+#                    )
+# sf::st_write(zonas_od, "zonas_od.gpkg")
+# piggyback::pb_upload("zonas_od.gpkg")
+# zonas_od = sf::read_sf("zonas_od.gpkg")
+# piggyback::pb_download("zonas_od.Rds")
+zonas_od = readRDS("zonas_od.Rds")
 tmap_mode("plot")         # mode = view breaks some plots (why? ask Robin)
 
 ```
@@ -648,27 +665,27 @@ saveRDS(car_routes, file = "car_routes_2021-09-16.Rds")
 Load the routes I calculated.
 
 ```{r, echo=FALSE}
-
 bike_routes = readRDS("bike_routes_2021-09-16.Rds")
 foot_routes = readRDS("foot_routes_2021-09-16.Rds")
 car_routes = readRDS("car_routes_2021-09-16.Rds")           
-
 ```
 
+something wrong here, check later...
+
 ```{r, echo=FALSE}
-
-bike_paths = st_read(file.path(folder, "SAD69-96_SHP_redecicloviaria/SAD69-96_SHP_redecicloviaria.shp"))
-  
-st_crs(bike_paths) = 5533     
-
-bike_paths = st_transform(bike_paths,
-                          crs = 4326)
-
+# remotes::install_cran("archive")
+# archive::archive("SAD69-96_SHP_redecicloviaria.rar") # fails
+# unrar SAD69-96_SHP_redecicloviaria.rar = bash command
+# bike_paths = st_read("SAD69-96_SHP_redecicloviaria.shp")
+# st_crs(bike_paths) = 5533     
+# bike_paths = st_transform(bike_paths, crs = 4326)
+# sf::write_sf(bike_paths, "bike_paths.gpkg")
+# piggyback::pb_upload("bike_paths.gpkg")
+bike_paths = read_sf("bike_paths.gpkg")
 ```
 
 
 ```{r, eval=FALSE}
-
 route_net_bike = overline(sl = bike_routes, attrib = "bike")
 
 leaflet(route_net_bike) %>% 
@@ -680,7 +697,7 @@ leaflet(route_net_bike) %>%
 
 ```{r, eval=FALSE}
 
-route_net_car = overline(sl = car_routes, regionalise = 9e99, attrib = "car")
+route_net_car = overline(sl = car_routes, attrib = "car")
 
 leaflet(route_net_car) %>% 
   addProviderTiles(providers$CartoDB.DarkMatter) %>%
@@ -690,7 +707,7 @@ leaflet(route_net_car) %>%
 
 ```{r, eval=FALSE}
 
-route_net_foot = overline(sl = foot_routes, regionalise = 9e99, attrib = "foot")
+route_net_foot = overline(sl = foot_routes, attrib = "foot")
 
 leaflet(route_net_foot) %>% 
   addProviderTiles(providers$CartoDB.DarkMatter) %>%
@@ -698,3 +715,172 @@ leaflet(route_net_foot) %>%
 
 ```
 
+
+### Infrastructure data (São Paulo municipality only)
+
+```{r, echo=FALSE}
+
+OD_sp = OD_2017_v1 %>%
+  filter(!is.na(modoprin) &
+           (muni_d == 36 & muni_o == 36)
+         ) %>%
+  select(zona_o, zona_d, modoprin, fe_via) %>%
+  mutate(
+    public = ifelse(modoprin %in% 1:6, 1, 0)*fe_via,
+    car = ifelse(modoprin %in% 9:10, 1, 0)*fe_via,
+    motorcycle = ifelse(modoprin %in% 13:14, 1, 0)*fe_via,
+    bike = ifelse(modoprin == 15, 1, 0)*fe_via,
+    foot = ifelse(modoprin == 16, 1, 0)*fe_via,
+    other = ifelse(modoprin %in% c(7, 8, 11, 12, 17), 1, 0)*fe_via
+    ) %>%
+  select(zona_o, zona_d, public, car, motorcycle, bike, foot, other) %>%
+  group_by(zona_o, zona_d) %>%
+  summarise_all(sum) %>%
+  ungroup() %>%
+  mutate(trips = public + car + motorcycle + bike + foot + other)
+
+```
+
+```{r, echo=FALSE}
+# I have two identical geometries in each route dataframe
+car_routes$route = NULL
+bike_routes$route = NULL
+foot_routes$route = NULL
+
+bike_routes$tot_length = (units::set_units(st_length(bike_routes), km))*bike_routes$bike
+car_routes$tot_length = (units::set_units(st_length(car_routes), km))*car_routes$car
+foot_routes$tot_length = (units::set_units(st_length(foot_routes), km))*foot_routes$foot
+
+```
+
+obs.: very strange behavior here: st_buffer + st_make_valid makes one single polygon very small. without st_buffer, R does not even plot -- "C stack usage too close to ...". These operations seems to be necessary in the other geometries. 
+```{r, echo=FALSE}
+
+ od_zones_sp = zonas_od %>%
+   filter(NumeroMuni == 36) %>%
+#  st_buffer(dist = 0) %>%
+   st_transform(4326) %>%
+   st_make_valid()
+
+# Calcadas_SP = st_read(file.path(folder,"Poligonos_calcadas/Calcadas_SP.shp"))
+# sw = Calcadas_SP %>%  # sidewalks
+#   st_buffer(dist = 0) %>%
+#   st_transform(4326) %>%
+#   st_make_valid()
+# saveRDS(sw, "sw.Rds")
+# sf::write_sf(sw, "sw.gpkg")
+sw = readRDS("sw.Rds")
+
+# streets = st_read(file.path(folder,"Poligonos_vias/Poligonos_vias_total.gpkg")) %>%  # streets
+#   st_buffer(dist = 0) %>%
+#   st_transform(4326) %>%
+#   st_make_valid()
+# sf::write_sf(streets, "streets.gpkg")
+# saveRDS(streets, "streets.Rds")
+# piggyback::pb_upload("streets.gpkg",
+#                      repo = "spstreets/OD2017")
+# piggyback::pb_upload("streets.Rds",
+#                      repo = "spstreets/OD2017")
+streets = readRDS("streets.Rds")
+ 
+ area_sw = sw %>%
+   st_intersection(od_zones_sp) %>%
+   mutate(area_sw = units::set_units(st_area(.), km^2)
+          ) %>%
+   select(NumeroZona, area_sw) %>%
+   st_drop_geometry() %>%
+   group_by(NumeroZona) %>%
+   summarise_all(sum)
+ 
+ area_streets = streets %>%
+   st_intersection(od_zones_sp) %>%
+   mutate(area_streets = units::set_units(st_area(.), km^2)
+          ) %>%
+   select(NumeroZona, area_streets) %>%
+   st_drop_geometry() %>%
+   group_by(NumeroZona) %>%
+   summarise_all(sum)
+
+```
+
+```{r, echo=FALSE}
+
+od_zones = od_zones_sp %>%
+  left_join(area_streets, by = c("NumeroZona")) %>%
+  left_join(area_sw, by = c("NumeroZona")) %>%
+  mutate(area = st_area(.),
+         share_sw = as.numeric(area_sw/area)*100,
+         share_streets = as.numeric(area_streets/area)*100
+         )
+
+```
+
+```{r, echo=FALSE}
+
+street = tm_shape(od_zones) +
+  tm_fill(col = "area_streets",
+          title = "Streets area (km^2)")
+
+street_share = tm_shape(od_zones) +
+  tm_fill(col = "share_streets",
+          title = "Street share (%)")
+
+sw = tm_shape(od_zones) +
+  tm_fill(col = "area_sw",
+          title = "Sidewalk area (km^2)")
+
+sw_share = tm_shape(od_zones) +
+  tm_fill(col = "share_sw",
+          title = "Sidewalk share (%)")
+
+tmap_arrange(street, sw, street_share, sw_share, ncol = 2)
+
+```
+
+OD pairs that generate the most intensive usage of space (kms traveled in the routes) have more area allocated to the transport mode (both foot and car) 
+
+Very strong pattern here.
+
+```{r, echo=FALSE}
+
+foot_routes %>%
+  filter(
+    (zona_o %in% unique(OD_sp$zona_o)) & (zona_d %in% unique(OD_sp$zona_d))
+    ) %>%
+  left_join(area_sw, by = c("zona_o" = "NumeroZona")) %>%
+  rename(sw_o = area_sw) %>%
+  left_join(area_sw, by = c("zona_d" = "NumeroZona")) %>%
+  rename(sw_d = area_sw) %>%
+  ggplot(aes(x = log(as.numeric(0.5*sw_o+0.5*sw_d)),
+             y = log(as.numeric(tot_length))
+             )
+         ) +
+  geom_point() +
+  xlab("log(OD mean sidewalk area)") +
+  ylab("log(total km walked OD pair)") +
+  theme_bw()
+
+```
+
+Some outliers in this graph, may be worth to check later...
+
+```{r, echo=FALSE}
+
+car_routes %>%
+  filter(
+    (zona_o %in% unique(OD_sp$zona_o)) & (zona_d %in% unique(OD_sp$zona_d))
+    ) %>%
+  left_join(area_streets, by = c("zona_o" = "NumeroZona")) %>%
+  rename(streets_o = area_streets) %>%
+  left_join(area_streets, by = c("zona_d" = "NumeroZona")) %>%
+  rename(streets_d = area_streets) %>%
+  ggplot(aes(x = log(as.numeric(0.5*streets_o+0.5*streets_d)),
+             y = log(as.numeric(tot_length))
+             )
+         ) +
+  geom_point() +
+  xlab("log(OD mean streets area)") +
+  ylab("log(total km drived in OD pair)") +
+  theme_bw()
+
+```
