@@ -831,7 +831,7 @@ sw = tm_shape(od_zones) +
 
 sw_share = tm_shape(od_zones) +
   tm_fill(col = "share_sw",
-          title = "Sidwalk share (%)")
+          title = "Sidewalk share (%)")
 
 tmap_arrange(street, sw, street_share, sw_share, ncol = 2)
 

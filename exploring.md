@@ -147,26 +147,6 @@ single polygon very small. without st\_buffer, R does not even plot – “C
 stack usage too close to …”. These operations seems to be necessary in
 the other geometries.
 
-    #> options:        ENCODING=LATIN1 
-    #> Reading layer `Zonas_2017_region' from data source `/home/lucas/Zonas_OD2017/Zonas_2017_region.shp' using driver `ESRI Shapefile'
-    #> Simple feature collection with 517 features and 7 fields
-    #> geometry type:  MULTIPOLYGON
-    #> dimension:      XYZ
-    #> bbox:           xmin: 275295.9 ymin: 7337234 xmax: 429153.6 ymax: 7435608
-    #> z_range:        zmin: 0 zmax: 0
-    #> projected CRS:  Corrego Alegre 1970-72 / UTM zone 23S
-    #> Reading layer `Calcadas_SP' from data source `/home/lucas/Poligonos_calcadas/Calcadas_SP.shp' using driver `ESRI Shapefile'
-    #> Simple feature collection with 491383 features and 15 fields
-    #> geometry type:  POLYGON
-    #> dimension:      XY
-    #> bbox:           xmin: 314656.4 ymin: 7346966 xmax: 360614.9 ymax: 7414209
-    #> projected CRS:  SIRGAS 2000 / UTM zone 23S
-    #> Reading layer `Poligonos_vias_total' from data source `/home/lucas/Poligonos_vias/Poligonos_vias_total.gpkg' using driver `GPKG'
-    #> Simple feature collection with 230816 features and 10 fields
-    #> geometry type:  POLYGON
-    #> dimension:      XY
-    #> bbox:           xmin: 313439.6 ymin: 7344106 xmax: 360592.5 ymax: 7416142
-    #> projected CRS:  SIRGAS 2000 / UTM zone 23S
     #> although coordinates are longitude/latitude, st_intersection assumes that they are planar
     #> Warning: attribute variables are assumed to be spatially constant throughout all
     #> geometries
