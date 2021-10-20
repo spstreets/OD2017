@@ -170,7 +170,7 @@ OD_2017_v1 %>%
     dist_bands = cut(dist_km,
                      breaks = c(0, 1, 3, 6, 10, 15, 20, 30, 83),     # max is 82.7
                      include.lowest = TRUE)
-  ) %>%
+    ) %>%
   select(dist_bands, mode_ab_streets, fe_via) %>%
   group_by(dist_bands, mode_ab_streets) %>%
   summarise(Trips = sum(fe_via)) %>%
@@ -202,45 +202,9 @@ There are `r length(unique(OD_2017_v1$id_dom)) - dim(n_dom_coords)[1]` more hous
 
 ### Basic temporal analysis
 
-Distributions of trips in the day
-
 ```{r, echo=FALSE}
 
-OD_2017_v1 %>%
-  filter(!is.na(modoprin)) %>%
-  mutate(
-    saida = h_saida + min_saida/60,
-    chegada = h_cheg + min_cheg/60,
-    motivo = case_when(
-      motivo_o == 8 ~ motivo_d,
-      motivo_d == 8 ~ motivo_o,
-      (motivo_o != 8 & motivo_d != 8) ~ motivo_d
-      ),
-    motivo_simples = case_when(
-      motivo %in% 1:3 ~ "Trabalho",
-      motivo == 4 ~ "Escola",
-      TRUE ~ "Outro"
-      )
-    ) %>%
-  ggplot() +
-  geom_density(aes(x=saida, weight=fe_via, color=motivo_simples, linetype="Saída")) +
-  geom_density(aes(x=chegada, weight=fe_via, color=motivo_simples, linetype="Chegada")) +
-  scale_colour_brewer(name="Modo",
-                      palette = "Set1") +
-  scale_linetype_manual(name="",
-                        values = c("Saída"="solid", "Chegada"="dashed")
-                        ) +
-  geom_vline(xintercept = c(10, 15), linetype = "dashed", colour = "grey", size = .5) +
-  ylab("Trips (density)") +
-  xlab("Hour") +
-  facet_wrap(~modo_simples) +
-  theme_bw()
-
-```
-
-```{r, echo=FALSE}
-
-OD_2017_v1 %>%
+OD_2017_v1 = OD_2017_v1 %>%
   filter(!is.na(modoprin)) %>%
   mutate(
     saida = h_saida + min_saida/60,
@@ -255,20 +219,63 @@ OD_2017_v1 %>%
       motivo == 4 ~ "Escola",
       TRUE ~ "Outro"
     )
-  ) %>%
-  ggplot() +
-  geom_density(aes(x=saida, weight=fe_via, color=motivo_simples, linetype="Saída")) +
-  geom_density(aes(x=chegada, weight=fe_via, color=motivo_simples, linetype="Chegada")) +
-  scale_colour_brewer(name="Modo",
-                      palette = "Set1") +
-  scale_linetype_manual(name="",
-                        values = c("Saída"="solid", "Chegada"="dashed")
-                        ) +
-  geom_vline(xintercept = c(10, 15), linetype = "dashed", colour = "grey", size = .5) +
-  ylab("Trips (density)") +
-  xlab("Hour") +
-  facet_wrap(~mode_ab_streets) +
-  theme_bw()
+  )
+
+```
+
+Distributions of trips in the day
+
+```{r, echo=FALSE}
+
+ggplot(OD_2017_v1) +
+geom_density(aes(x=saida,
+                 y=after_stat(count),
+                 weight=fe_via,
+                 color=motivo_simples,
+                 linetype="Saída")
+             ) +
+geom_density(aes(x=chegada,
+                 y=after_stat(count),
+                 weight=fe_via,
+                 color=motivo_simples,
+                 linetype="Chegada")
+             ) +
+scale_colour_brewer(name="Motivo",
+                    palette="Set1") +
+scale_linetype_manual(name="",
+                      values = c("Saída"="solid", "Chegada"="dashed")
+                      ) +
+ylab("# of Trips") +
+xlab("Hour") +
+facet_wrap(~modo_simples) +
+theme_bw()
+
+```
+
+```{r, echo=FALSE}
+
+ggplot(OD_2017_v1) +
+  geom_density(aes(x=saida,
+                 y=after_stat(count),
+                 weight=fe_via,
+                 color=motivo_simples,
+                 linetype="Saída")
+             ) +
+geom_density(aes(x=chegada,
+                 y=after_stat(count),
+                 weight=fe_via,
+                 color=motivo_simples,
+                 linetype="Chegada")
+             ) +
+scale_colour_brewer(name="Motivo",
+                    palette="Set1") +
+scale_linetype_manual(name="",
+                      values = c("Saída"="solid", "Chegada"="dashed")
+                      ) +
+ylab("# of Trips") +
+xlab("Hour") +
+facet_wrap(~mode_ab_streets) +
+theme_bw()
 
 ```
 

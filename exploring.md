@@ -23,34 +23,29 @@ remaining graphs.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
-### Different ways of defining modes
-
-I aggregate the different names used for similar things. And this is the
-resulting distribution of trips for each mode.
-
-![](exploring_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
-
 ### Recategorisation of modes
 
 I tried two different recategorisations (see code for the choices).The
 first is based on the “vehicle” itself, and the other relies on the
 “role” of the individual while in the trip.
 
-![](exploring_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
-
-![](exploring_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
 Now the A/B Streets classification (foot, bike, car, public transport
 and other):
 
-![](exploring_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
 
 Now the mode share by distance (using the first recategorisation). The
 average trips’ distance is 5305.0981626.
 
     #> `summarise()` regrouping output by 'dist_bands' (override with `.groups` argument)
 
-![](exploring_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+    #> `summarise()` regrouping output by 'dist_bands' (override with `.groups` argument)
+
+![](exploring_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 ### \[OFF\] Checking whether the coordinates are real or just sub-zones centroids.
 
@@ -58,13 +53,11 @@ There are 3487 more households than households’ coordinates pairs.
 
 ### Basic temporal analysis
 
-Distributions of trips in the day.
+Distributions of trips in the day
 
-![Using `motivo_o`, reason at the origin, to
-define.](exploring_files/figure-gfm/unnamed-chunk-9-1.png)
+![](exploring_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
-![Using `motivo_d`, reason at the destination, to
-define.](exploring_files/figure-gfm/unnamed-chunk-10-1.png)
+![](exploring_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 ### Basic geographic analysis (now with times )
 
