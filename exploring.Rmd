@@ -469,21 +469,26 @@ distancias_zona = OD_2017_v1 %>%
   summarise(dist_km = sum(dist_km)) %>%
   ungroup() %>%
   left_join(pop_zona, by = c("zona"="zona")) %>%
-  left_join(zonas_od, by = c("zona"="NumeroZona")) %>%
   mutate(distancia_media = dist_km/pop) %>%
+  st_as_sf(sf_column_name = "geometry")
+
+distancias_commute_zona = OD_2017_v1 %>%
+  filter(motivo_simples == "Trabalho") %>%
+  select(zona, id_pess, distancia, modo_simples, fe_via, fe_pess) %>%
+  group_by(id_pess, zona, modo_simples) %>%
+  mutate(fe_via = replace_na(fe_via, 0),
+         distancia = replace_na(distancia, 0)) %>%
+  summarise(dist_km = sum((distancia/1000)*fe_via)) %>%
+  ungroup() %>%
+  group_by(zona, modo_simples) %>%
+  summarise(dist_km = sum(dist_km)) %>%
+  ungroup() %>%
+  left_join(pop_zona, by = c("zona"="zona")) %>%
+  mutate(distancia_media = dist_km/pop)%>%
   st_as_sf(sf_column_name = "geometry")
 
 ```
 
-```{r, echo=FALSE}
-
-tm_shape(distancias_zona) +
-  tm_fill("distancia_media",
-          style = "cont",
-          title = "Distância média das viagens (km)") +
-  tm_facets(by="motivo_simples", ncol=3)
-
-```
 
 ```{r, echo=FALSE}
 
@@ -503,6 +508,27 @@ tmap_arrange(populacao, densidade, ncol=2)
 
 ```
 
+```{r, echo=FALSE}
+
+tm_shape(distancias_zona) +
+  tm_fill("distancia_media",
+          style = "cont",
+          title = "Distância média das viagens (km)") +
+  tm_facets(by="motivo_simples", ncol=3)
+
+```
+
+```{r, echo=FALSE}
+
+tm_shape(distancias_commute_zona) +
+  tm_fill("distancia_media",
+          style = "cont",
+          title = "Distância média das viagens (km)") +
+  tm_facets(by="modo_simples", ncol=2) +
+  tm_layout(main.title = "Viagens com motivo trabalho (commute)",
+            main.title.position = "center")
+
+```
 
 #### Active travels and trip patterns
 

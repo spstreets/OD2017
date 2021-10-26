@@ -87,7 +87,17 @@ Now, the destinations for São Paulo City.
 
 #### Distances by zone of residence
 
-![](exploring_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+    #> `summarise()` ungrouping output (override with `.groups` argument)
+    #> `summarise()` regrouping output by 'id_pess', 'zona' (override with `.groups` argument)
+    #> `summarise()` regrouping output by 'zona' (override with `.groups` argument)
+    #> `summarise()` regrouping output by 'id_pess', 'zona' (override with `.groups` argument)
+    #> `summarise()` regrouping output by 'zona' (override with `.groups` argument)
+
+![](exploring_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+
+![](exploring_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+
+![](exploring_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
 #### Active travels and trip patterns
 
@@ -102,32 +112,32 @@ Bike trips:
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 Foot trips:
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
 Car trips, still too many lines (10,000) to account for \>92% of total
 car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 Using the first 5,000 OD pairs, we have \>78% of all car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
 Using the biggest 1,000 pairs, we have \>45% of all car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 ### Main routes by mode (takes a long time here) – rewriting this part.
 
