@@ -453,7 +453,10 @@ pop_zona = OD_2017_v1 %>%
   select(id_pess, zona, fe_pess) %>%
   unique() %>%
   group_by(zona) %>%
-  summarise(pop = sum(fe_pess))
+  summarise(pop = sum(fe_pess)) %>%
+  left_join(zonas_od, by = c("zona"="NumeroZona")) %>%
+  st_as_sf(sf_column_name = "geometry") %>%
+  mutate(densidade = pop/Area_ha_2)
 
 distancias_zona = OD_2017_v1 %>%
   select(zona, id_pess, distancia, motivo_simples, fe_via, fe_pess) %>%
@@ -481,6 +484,25 @@ tm_shape(distancias_zona) +
   tm_facets(by="motivo_simples", ncol=3)
 
 ```
+
+```{r, echo=FALSE}
+
+populacao = tm_shape(pop_zona) +
+  tm_polygons("pop",
+              style = "cont",
+              title = "População",
+              lwd = .25)
+
+densidade = tm_shape(pop_zona) +
+  tm_polygons("densidade",
+              style = "cont",
+              title = "População/ha",
+              lwd = .25)
+
+tmap_arrange(populacao, densidade, ncol=2)
+
+```
+
 
 #### Active travels and trip patterns
 
