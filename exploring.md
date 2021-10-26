@@ -47,9 +47,9 @@ average trips’ distance is 5305.0981626.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
-### \[OFF\] Checking whether the coordinates are real or just sub-zones centroids.
+    #> `summarise()` regrouping output by 'dist_bands' (override with `.groups` argument)
 
-There are 3487 more households than households’ coordinates pairs.
+![](exploring_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
 ### Basic temporal analysis
 
@@ -85,6 +85,10 @@ Now, the destinations for São Paulo City.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
+#### Distances by zone of residence
+
+![](exploring_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+
 #### Active travels and trip patterns
 
 (I removed the previous visualizations since they were not saying
@@ -98,32 +102,32 @@ Bike trips:
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
 Foot trips:
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
 Car trips, still too many lines (10,000) to account for \>92% of total
 car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 Using the first 5,000 OD pairs, we have \>78% of all car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 Using the biggest 1,000 pairs, we have \>45% of all car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
 ### Main routes by mode (takes a long time here) – rewriting this part.
 
@@ -140,23 +144,10 @@ single polygon very small. without st\_buffer, R does not even plot – “C
 stack usage too close to …”. These operations seems to be necessary in
 the other geometries.
 
-    #> although coordinates are longitude/latitude, st_intersection assumes that they are planar
-    #> Warning: attribute variables are assumed to be spatially constant throughout all
-    #> geometries
-    #> although coordinates are longitude/latitude, st_intersection assumes that they are planar
-    #> Warning: attribute variables are assumed to be spatially constant throughout all
-    #> geometries
-
-![](exploring_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
-
 OD pairs that generate the most intensive usage of space (kms traveled
 in the routes) have more area allocated to the transport mode (both foot
 and car)
 
 Very strong pattern here.
 
-![](exploring_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
-
 Some outliers in this graph, may be worth to check later…
-
-![](exploring_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
