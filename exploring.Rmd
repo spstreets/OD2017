@@ -250,6 +250,20 @@ OD_2017_v1 = OD_2017_v1 %>%
 
 ```
 
+Number of trips / reason
+
+```{r, echo=FALSE}
+
+count(x = OD_2017_v1, motivo, wt = fe_via)
+
+```
+
+```{r, echo=FALSE}
+
+count(x = OD_2017_v1, motivo_simples, wt = fe_via)
+
+```
+
 
 ### Basic temporal analysis
 
@@ -306,9 +320,10 @@ OD_2017_v1 %>%
   scale_linetype_manual(name="",
                         values = c("Saída"="solid", "Chegada"="dashed")
                         ) +
+  ggtitle("A/B Streets Classification") +
   ylab("# of Trips") +
   xlab("Hour") +
-  facet_wrap(~mode_ab_streets) +
+  facet_wrap(~mode_ab_streets, ncol = 2) +
   theme_bw()
 
 ```
@@ -514,7 +529,7 @@ tm_shape(distancias_zona) +
   tm_fill("distancia_media",
           style = "cont",
           title = "Distância média das viagens (km)") +
-  tm_facets(by="motivo_simples", ncol=3)
+  tm_facets(by="motivo_simples", ncol=2)
 
 ```
 
@@ -530,7 +545,8 @@ tm_shape(distancias_commute_zona) +
 
 ```
 
-#### Active travels and trip patterns
+
+#### Active travels and trip patterns (Desire lines)
 
 (I removed the previous visualizations since they were not saying anything about the data.)
 

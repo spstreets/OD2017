@@ -51,13 +51,37 @@ average trips’ distance is 5305.0981626.
 
 ![](exploring_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
+Number of trips / reason
+
+    #> # A tibble: 11 x 2
+    #>                          motivo         n
+    #>                       <dbl+lbl>     <dbl>
+    #>  1  1 [Trabalho Indústria]       2924869.
+    #>  2  2 [Trabalho Comércio]        3523074.
+    #>  3  3 [Trabalho Serviços]       12064328.
+    #>  4  4 [Escola/Educação]         14670928.
+    #>  5  5 [Compras]                  1929215.
+    #>  6  6 [Médico/Dentista/Saúde]    1827264.
+    #>  7  7 [Recreação/Visitas/Lazer]  1816626.
+    #>  8  9 [Procurar Emprego]          180089.
+    #>  9 10 [Assuntos Pessoais]        2496314.
+    #> 10 11 [Refeição]                  573954.
+    #> 11 NA                                  0
+
+    #> # A tibble: 3 x 2
+    #>   motivo_simples         n
+    #>   <chr>              <dbl>
+    #> 1 Escola         14670928.
+    #> 2 Outro           8823462.
+    #> 3 Trabalho       18512270.
+
 ### Basic temporal analysis
 
 Distributions of trips in the day
 
-![](exploring_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
-![](exploring_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 ### Basic geographic analysis (now with times )
 
@@ -71,19 +95,19 @@ the main zones of origin and destination.
 
 Plotting the origin zones by time.
 
-![](exploring_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 Plotting the destination zones by time.
 
-![](exploring_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 Looking at the São Paulo City. First, the origins.
 
-![](exploring_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 Now, the destinations for São Paulo City.
 
-![](exploring_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 #### Distances by zone of residence
 
@@ -93,13 +117,13 @@ Now, the destinations for São Paulo City.
     #> `summarise()` regrouping output by 'id_pess', 'zona' (override with `.groups` argument)
     #> `summarise()` regrouping output by 'zona' (override with `.groups` argument)
 
-![](exploring_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
-
-![](exploring_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
-
 ![](exploring_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
-#### Active travels and trip patterns
+![](exploring_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+
+![](exploring_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+#### Active travels and trip patterns (Desire lines)
 
 (I removed the previous visualizations since they were not saying
 anything about the data.)
@@ -112,32 +136,32 @@ Bike trips:
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 Foot trips:
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
 Car trips, still too many lines (10,000) to account for \>92% of total
 car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 Using the first 5,000 OD pairs, we have \>78% of all car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 Using the biggest 1,000 pairs, we have \>45% of all car trips.
 
     #> Creating centroids representing desire line start and end points.
 
-![](exploring_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](exploring_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 ### Main routes by mode (takes a long time here) – rewriting this part.
 
