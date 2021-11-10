@@ -16,6 +16,7 @@ library(sf)
 library(tmap)
 library(leaflet)
 library(stplanr)
+library(geobr)
 library(od)
 library(osrm)
 # assume data is in the folder
@@ -504,6 +505,7 @@ distancias_commute_zona = OD_2017_v1 %>%
 
 ```
 
+Looking at the population data here.
 
 ```{r, echo=FALSE}
 
@@ -522,6 +524,94 @@ densidade = tm_shape(pop_zona) +
 tmap_arrange(populacao, densidade, ncol=2)
 
 ```
+
+Comparing the population with the Census (2010) using census tracts.
+
+```{r, echo=FALSE}
+
+mapa_setores = read_census_tract(code_tract = "SP",
+                                 year = 2010)
+
+pop_setores = readRDS("./pop_census_tract_2010.Rds")
+
+sf_use_s2(FALSE)       # to avoid that "invalid geometry" error when calculating the centroids 
+
+pop_setores_sp = pop_setores %>%
+  filter(id_setor_censitario %in% unique(mapa_setores$code_tract)) %>%
+  left_join(mapa_setores, by = c("id_setor_censitario"="code_tract")) %>%
+  select(id_setor_censitario, pop = v001, geom) %>%
+  st_as_sf() %>%
+  st_centroid()     # st_is_longlat(pop_setores_sp) is TRUE
+
+zonas = zonas_od %>%
+  select(NumeroZona, NomeZona) %>%
+  st_transform(crs = st_crs(pop_setores_sp))
+
+setor_zona = st_join(pop_setores_sp,
+                     zonas,
+                     st_covered_by)
+
+st_geometry(setor_zona) = NULL
+
+pop_zona_censo = setor_zona %>%
+  group_by(NumeroZona) %>%
+  summarise(pop_censo = sum(pop)) %>%
+  filter(!is.na(NumeroZona))       # dropping the rest of SP State 
+
+pop_zona_od = OD_2017_v1 %>%
+  select(id_pess, zona, fe_pess) %>%        # OD is at the trip level, I need one obs/person
+  unique() %>%
+  group_by(zona) %>%
+  summarise(pop_zona = sum(fe_pess))
+
+zonas_pop = zonas %>%
+  left_join(pop_zona_od, by = c("NumeroZona"="zona")) %>%
+  left_join(pop_zona_censo, by = c("NumeroZona"="NumeroZona")) %>%
+  mutate(
+    diff_zona_censo = pop_zona - pop_censo,
+    diff_perc_od_censo = ((diff_zona_censo)/pop_censo)*100
+  )
+
+```
+
+```{r, echo=FALSE}
+
+tm_shape(zonas_pop) +
+  tm_fill(c("pop_zona", "pop_censo"),
+          breaks = c(0, 5000, 10000, 20000, 50000, 100000, 150000, 250000),
+          title = "População",
+          palette = "viridis") +
+  tm_facets(sync = TRUE, ncol = 2) +
+  tm_layout(panel.labels = c("OD2017", "Censo 2010"),
+            legend.outside = TRUE)
+
+```
+
+Some people left São Paulo City, but is not significant relative to the total.
+
+```{r, echo=FALSE}
+
+diff_map = tm_shape(zonas_pop) +
+  tm_fill(c("diff_zona_censo"),
+          title = "Diferença (OD - Censo)",
+          palette = c("red","white","blue"),
+          midpoint = 0) +
+  tm_layout(legend.outside = TRUE,
+            legend.text.size = 0.3)
+
+perc_change = tm_shape(zonas_pop) +
+  tm_fill(c("diff_perc_od_censo"),
+          title = "Diferença %",
+          breaks = c(seq(-150, 150, by=25)),
+          palette = c("red","white","blue"),
+          midpoint = 0) +
+  tm_layout(legend.outside = TRUE,
+            legend.text.size = 0.3)
+
+tmap_arrange(diff_map, perc_change, nrow = 1, ncol = 2)
+
+```
+
 
 ```{r, echo=FALSE}
 
