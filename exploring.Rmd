@@ -24,9 +24,7 @@ library(osrm)
 # folder = "~/Dropbox/DATA/"
 # folder = "~/hd/data/project-data/spshared/"
 
-pb_download(repo = "spstreets/OD2017",
-            tag = "1",
-            dest = ".")
+pb_download(repo = "spstreets/OD2017")
 
 # folder = "~/hd/data/project-data/spshared/"
 # load(file.path(folder, "OD2017.rda"))
