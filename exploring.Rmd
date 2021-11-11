@@ -16,6 +16,7 @@ library(sf)
 library(tmap)
 library(leaflet)
 library(stplanr)
+library(geobr)
 library(od)
 library(osrm)
 # assume data is in the folder
@@ -23,9 +24,7 @@ library(osrm)
 # folder = "~/Dropbox/DATA/"
 # folder = "~/hd/data/project-data/spshared/"
 
-pb_download(repo = "spstreets/OD2017",
-            tag = "1",
-            dest = ".")
+pb_download(repo = "spstreets/OD2017")
 
 # folder = "~/hd/data/project-data/spshared/"
 # load(file.path(folder, "OD2017.rda"))
@@ -67,25 +66,19 @@ OD_2017_v1 %>%
 
 ```
 
+### Recategorisation of modes
 
-### Different ways of defining modes
-
-I aggregate the different names used for similar things. And this is the resulting distribution of trips for each mode.
+I tried two different recategorisations (see code for the choices).The first is based on the "vehicle" itself, and the other relies on the "role" of the individual while in the trip.
 
 ```{r, echo=FALSE}
 
 OD_2017_v1 = OD_2017_v1 %>%
   dplyr::mutate(
     modo_simples = case_when(
-      modoprin==1 | modoprin==2 | modoprin==3 ~ "Metrô, trem e monotrilho",
-      modoprin==4 | modoprin==5 | modoprin==6 ~ "Ônibus",
-      modoprin==7 | modoprin==8            ~ "Fretado e Escolar",
-      modoprin==9 | modoprin==10           ~ "Automóvel",
-      modoprin==11 | modoprin==12          ~ "Táxi e derivados",
-      modoprin==13 | modoprin==14          ~ "Moto",
-      modoprin==15                      ~ "Bicicleta",
-      modoprin==16                      ~ "A pé",
-      modoprin==17                      ~ "Outros",
+      modoprin %in% 1:6 ~ "Público",
+      modoprin %in% 9:14 ~ "Individual motorizado",
+      modoprin == 15 | modoprin == 16 ~ "Ativo",
+      modoprin %in% c(7, 8, 17) ~ "Outro"
     )
   )
 
@@ -99,75 +92,7 @@ OD_2017_v1 %>%
                                                decimal.mark = ".",
                                                scientific = FALSE)
                      ) +
-  ggtitle("Aggregating similar modes") +
-  xlab("") +
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 60, vjust = 1, hjust = 1))
-
-```
-
-
-### Recategorisation of modes
-
-I tried two different recategorisations (see code for the choices).The first is based on the "vehicle" itself, and the other relies on the "role" of the individual while in the trip.
-
-```{r, echo=FALSE}
-
-OD_2017_v1 = OD_2017_v1 %>%
-  dplyr::mutate(
-    mode_recat1 = case_when(
-      modoprin %in% 1:6 ~ "Public transport",
-      modoprin %in% 9:10 ~ "Car",
-      modoprin %in% 13:14 ~ "Motorcycle",
-      modoprin == 15 ~ "Bicycle",
-      modoprin == 16 ~ "On foot",
-      modoprin == 17 | modoprin == 12 | modoprin == 11 | modoprin == 7 | modoprin == 8 ~ "Other"
-    )
-  )
-
-OD_2017_v1 %>%
-  filter(!is.na(modoprin)) %>%
-  ggplot() +
-  geom_bar(aes(mode_recat1, weight=fe_via)) +
-  scale_y_continuous(name = "Thousands of trips / day",
-                     labels=function(x) format(x/1000,
-                                               big.mark = ",",
-                                               decimal.mark = ".",
-                                               scientific = FALSE)
-                     ) +
-  ggtitle("Recategorisation of modes 1") +
-  xlab("")+
-  theme_bw() +
-  theme(axis.text.x = element_text(angle = 60, vjust = 1, hjust = 1))
-
-```
-
-```{r, echo=FALSE}
-
-OD_2017_v1 = OD_2017_v1 %>%
-  dplyr::mutate(
-    mode_recat2 = case_when(
-      modoprin %in% 1:6 ~ "Public transport",
-      modoprin == 9 | modoprin == 13 ~ "Driving",
-      modoprin==10 | modoprin==14 ~ "Rider",
-      modoprin %in% c(7, 8, 11, 12) ~ "Private transport passenger",
-      modoprin==15 ~ "Cycling",
-      modoprin==16 ~ "Walking",
-      modoprin==17 ~ "Other"
-    )
-  )
-
-OD_2017_v1 %>%
-  filter(!is.na(modoprin)) %>%
-  ggplot() +
-  geom_bar(aes(mode_recat2, weight=fe_via)) +
-  scale_y_continuous(name = "Thousands of trips / day",
-                     labels=function(x) format(x/1000,
-                                               big.mark = ",",
-                                               decimal.mark = ".",
-                                               scientific = FALSE)
-                     ) +
-  ggtitle("Recategorisation of modes - 2") +
+  ggtitle("Modo Simples") +
   xlab("") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 60, vjust = 1, hjust = 1))
@@ -189,7 +114,6 @@ OD_2017_v1 = OD_2017_v1 %>%
     )
   )
 
-
 OD_2017_v1 %>%
   filter(!is.na(modoprin)) %>%
   ggplot() +
@@ -205,11 +129,9 @@ OD_2017_v1 %>%
   theme_bw() +
   theme(axis.text.x = element_text(angle = 60, vjust = 1, hjust = 1))
 
-
 ```
 
-Now the mode share by distance (using the first recategorisation). The average trips' distance is `r weighted.mean(OD_2017_v1$distancia, OD_2017_v1$fe_via, na.rm = TRUE)`. 
-
+Now the mode share by distance (using the first recategorisation). The average trips' distance is `r weighted.mean(OD_2017_v1$distancia, OD_2017_v1$fe_via, na.rm = TRUE)`.
 
 ```{r, echo=FALSE}
 
@@ -221,10 +143,10 @@ OD_2017_v1 %>%
                      breaks = c(0, 1, 3, 6, 10, 15, 20, 30, 83),     # max is 82.7
                      include.lowest = TRUE)
   ) %>%
-  select(dist_bands, mode_recat1, fe_via) %>%
-  group_by(dist_bands, mode_recat1) %>%
+  select(dist_bands, modo_simples, fe_via) %>%
+  group_by(dist_bands, modo_simples) %>%
   summarise(Trips = sum(fe_via)) %>%
-  ggplot(aes(x = dist_bands, y = Trips, fill = mode_recat1)) +
+  ggplot(aes(x = dist_bands, y = Trips, fill = modo_simples)) +
   geom_col() +
   xlab("Distance (km)") +
   scale_y_continuous(name = "Thousands of trips / day",
@@ -238,75 +160,169 @@ OD_2017_v1 %>%
 ```
 
 
-### [OFF] Checking whether the coordinates are real or just sub-zones centroids.
-
-
-```{r}
-
-n_dom_coords = OD_2017_v1 %>%
-  group_by(co_dom_x, co_dom_y) %>%
-  count()
-
-```
-
-There are `r length(unique(OD_2017_v1$id_dom)) - dim(n_dom_coords)[1]` more households than households' coordinates pairs.
-
-
-### Basic temporal analysis
-
-Distributions of trips in the day.
-
-```{r, echo=FALSE, fig.cap = "Using `motivo_o`, reason at the origin, to define."}
+```{r, echo=FALSE}
 
 OD_2017_v1 %>%
   filter(!is.na(modoprin)) %>%
   mutate(
-    saida = h_saida + min_saida/60,
-    chegada = h_cheg + min_cheg/60,
-    motivo = case_when(
-      motivo_o %in% 1:3 ~ "Trabalho",
-      motivo_o == 4 ~ "Escola",
-      motivo_o == 8 ~ "Residência",
-      TRUE ~ "Outro"
-    )
-  ) %>%
-  ggplot() +
-  geom_density(aes(x=saida, weight=fe_via, linetype="Saída")) +
-  geom_density(aes(x=chegada, weight=fe_via, linetype="Chegada")) +
-  scale_linetype_manual(name="",
-                        values = c("Saída"="solid", "Chegada"="dashed")) +
-  geom_vline(xintercept = c(10, 15), linetype = "dashed", colour = "red", size = 1) +
-  ylab("Trips (density)") +
-  xlab("Hour") +
-  facet_wrap(~motivo) +
+    dist_km = distancia/1000,
+    dist_bands = cut(dist_km,
+                     breaks = c(0, 1, 3, 6, 10, 15, 20, 30, 83),     # max is 82.7
+                     include.lowest = TRUE)
+    ) %>%
+  select(dist_bands, mode_ab_streets, fe_via) %>%
+  group_by(dist_bands, mode_ab_streets) %>%
+  summarise(Trips = sum(fe_via)) %>%
+  ggplot(aes(x = dist_bands, y = Trips, fill = mode_ab_streets)) +
+  geom_col() +
+  ggtitle("A/B Streets Classification") +
+  xlab("Distance (km)") +
+  scale_y_continuous(name = "Thousands of trips / day",
+                     labels=function(x) format(x/1000,
+                                               big.mark = ",",
+                                               decimal.mark = ".",
+                                               scientific = FALSE)) +
+  scale_fill_brewer(palette = "Set1", name = "Mode") +
   theme_bw()
 
 ```
 
 
-```{r, echo=FALSE, fig.cap = "Using `motivo_d`, reason at the destination, to define."}
+```{r, echo=FALSE}
 
 OD_2017_v1 %>%
   filter(!is.na(modoprin)) %>%
   mutate(
+    dist_km = distancia/1000,
+    dist_bands = cut(dist_km,
+                     breaks = c(0, 1, 3, 6, 10, 15, 20, 30, 83),     # max is 82.7
+                     include.lowest = TRUE),
+    motivo = case_when(
+      motivo_o == 8 ~ motivo_d,
+      motivo_d == 8 ~ motivo_o,
+      (motivo_o != 8 & motivo_d != 8) ~ motivo_d
+    ),
+    motivo_simples = case_when(
+      motivo %in% 1:3 ~ "Trabalho",
+      motivo == 4 ~ "Escola",
+      TRUE ~ "Outro")
+    ) %>%
+  select(dist_bands, motivo_simples, fe_via) %>%
+  group_by(dist_bands, motivo_simples) %>%
+  summarise(Trips = sum(fe_via)) %>%
+  ggplot(aes(x = dist_bands, y = Trips, fill = motivo_simples)) +
+  geom_col() +
+  ggtitle("") +
+  xlab("Distance (km)") +
+  scale_y_continuous(name = "Thousands of trips / day",
+                     labels=function(x) format(x/1000,
+                                               big.mark = ",",
+                                               decimal.mark = ".",
+                                               scientific = FALSE)) +
+  scale_fill_brewer(palette = "Set1", name = "Motivo") +
+  theme_bw()
+
+```
+
+
+```{r, echo=FALSE}
+
+OD_2017_v1 = OD_2017_v1 %>%
+  mutate(
     saida = h_saida + min_saida/60,
     chegada = h_cheg + min_cheg/60,
     motivo = case_when(
-      motivo_d %in% 1:3 ~ "Trabalho",
-      motivo_d == 4 ~ "Escola",
-      motivo_d == 8 ~ "Residência",
+      motivo_o == 8 ~ motivo_d,
+      motivo_d == 8 ~ motivo_o,
+      (motivo_o != 8 & motivo_d != 8) ~ motivo_d
+    ),
+    motivo_simples = case_when(
+      motivo %in% 1:3 ~ "Trabalho",
+      motivo == 4 ~ "Escola",
       TRUE ~ "Outro"
-    )
-  ) %>%
+    ),
+    dist_km = distancia/1000,
+    distancia_viagens = cut(dist_km,
+                            breaks = c(0, 1, 3, 6, 83),
+                            include.lowest = TRUE)
+  )
+
+```
+
+Number of trips / reason
+
+```{r, echo=FALSE}
+
+count(x = OD_2017_v1, motivo, wt = fe_via)
+
+```
+
+```{r, echo=FALSE}
+
+count(x = OD_2017_v1, motivo_simples, wt = fe_via)
+
+```
+
+
+### Basic temporal analysis
+
+Distributions of trips in the day
+
+```{r, echo=FALSE}
+
+OD_2017_v1 %>%
+  filter(!is.na(modoprin)) %>%
   ggplot() +
-  geom_density(aes(x=saida, weight=fe_via, linetype="Saída")) +
-  geom_density(aes(x=chegada, weight=fe_via, linetype="Chegada")) +
+  geom_density(aes(x=saida,
+                   y=after_stat(count),
+                   weight=fe_via,
+                   color=motivo_simples,
+                   linetype="Saída")
+               ) +
+  geom_density(aes(x=chegada,
+                   y=after_stat(count),
+                   weight=fe_via,
+                   color=motivo_simples,
+                   linetype="Chegada")
+               ) +
+  scale_colour_brewer(name="Motivo",
+                      palette="Set1") +
   scale_linetype_manual(name="",
-                        values = c("Saída"="solid", "Chegada"="dashed")) +
-  geom_vline(xintercept = c(10, 15), linetype = "dashed", colour = "red", size = 1) +
-  ylab("Trips (density)") +
+                        values = c("Saída"="solid", "Chegada"="dashed")
+                        ) +
+  ylab("# of Trips") +
   xlab("Hour") +
-  facet_wrap(~motivo) +
+  facet_wrap(~modo_simples) +
+  theme_bw()
+
+```
+
+```{r, echo=FALSE}
+
+OD_2017_v1 %>%
+  filter(!is.na(modoprin)) %>%
+  ggplot() +
+    geom_density(aes(x=saida,
+                   y=after_stat(count),
+                   weight=fe_via,
+                   color=motivo_simples,
+                   linetype="Saída")
+               ) +
+  geom_density(aes(x=chegada,
+                   y=after_stat(count),
+                   weight=fe_via,
+                   color=motivo_simples,
+                   linetype="Chegada")
+               ) +
+  scale_colour_brewer(name="Motivo",
+                      palette="Set1") +
+  scale_linetype_manual(name="",
+                        values = c("Saída"="solid", "Chegada"="dashed")
+                        ) +
+  ggtitle("A/B Streets Classification") +
+  ylab("# of Trips") +
+  xlab("Hour") +
+  facet_wrap(~mode_ab_streets, ncol = 2) +
   theme_bw()
 
 ```
@@ -325,7 +341,7 @@ OD_2017_v1 %>%
 # zonas_od = sf::read_sf("zonas_od.gpkg")
 # piggyback::pb_download("zonas_od.Rds")
 zonas_od = readRDS("zonas_od.Rds")
-tmap_mode("plot")         # mode = view breaks some plots (why? ask Robin)
+tmap_mode("plot")                     # mode = view breaks some plots (why? ask Robin)
 
 ```
 
@@ -443,8 +459,182 @@ destination %>%
 
 ```
 
+#### Distances by zone of residence
 
-#### Active travels and trip patterns
+```{r, echo=FALSE}
+
+pop_zona = OD_2017_v1 %>%
+  select(id_pess, zona, fe_pess) %>%
+  unique() %>%
+  group_by(zona) %>%
+  summarise(pop = sum(fe_pess)) %>%
+  left_join(zonas_od, by = c("zona"="NumeroZona")) %>%
+  st_as_sf(sf_column_name = "geometry") %>%
+  mutate(densidade = pop/Area_ha_2)
+
+distancias_zona = OD_2017_v1 %>%
+  select(zona, id_pess, distancia, motivo_simples, fe_via, fe_pess) %>%
+  group_by(id_pess, zona, motivo_simples) %>%
+  mutate(fe_via = replace_na(fe_via, 0),
+         distancia = replace_na(distancia, 0)) %>%
+  summarise(dist_km = sum((distancia/1000)*fe_via)) %>%
+  ungroup() %>%
+  group_by(zona, motivo_simples) %>%
+  summarise(dist_km = sum(dist_km)) %>%
+  ungroup() %>%
+  left_join(pop_zona, by = c("zona"="zona")) %>%
+  mutate(distancia_media = dist_km/pop) %>%
+  st_as_sf(sf_column_name = "geometry")
+
+distancias_commute_zona = OD_2017_v1 %>%
+  filter(motivo_simples == "Trabalho") %>%
+  select(zona, id_pess, distancia, modo_simples, fe_via, fe_pess) %>%
+  group_by(id_pess, zona, modo_simples) %>%
+  mutate(fe_via = replace_na(fe_via, 0),
+         distancia = replace_na(distancia, 0)) %>%
+  summarise(dist_km = sum((distancia/1000)*fe_via)) %>%
+  ungroup() %>%
+  group_by(zona, modo_simples) %>%
+  summarise(dist_km = sum(dist_km)) %>%
+  ungroup() %>%
+  left_join(pop_zona, by = c("zona"="zona")) %>%
+  mutate(distancia_media = dist_km/pop)%>%
+  st_as_sf(sf_column_name = "geometry")
+
+```
+
+Looking at the population data here.
+
+```{r, echo=FALSE}
+
+populacao = tm_shape(pop_zona) +
+  tm_polygons("pop",
+              style = "cont",
+              title = "População",
+              lwd = .25)
+
+densidade = tm_shape(pop_zona) +
+  tm_polygons("densidade",
+              style = "cont",
+              title = "População/ha",
+              lwd = .25)
+
+tmap_arrange(populacao, densidade, ncol=2)
+
+```
+
+Comparing the population with the Census (2010) using census tracts.
+
+```{r, echo=FALSE}
+
+mapa_setores = read_census_tract(code_tract = "SP",
+                                 year = 2010)
+
+pop_setores = readRDS("./pop_census_tract_2010.Rds")
+
+sf_use_s2(FALSE)       # to avoid that "invalid geometry" error when calculating the centroids 
+
+pop_setores_sp = pop_setores %>%
+  filter(id_setor_censitario %in% unique(mapa_setores$code_tract)) %>%
+  left_join(mapa_setores, by = c("id_setor_censitario"="code_tract")) %>%
+  select(id_setor_censitario, pop = v001, geom) %>%
+  st_as_sf() %>%
+  st_centroid()     # st_is_longlat(pop_setores_sp) is TRUE
+
+zonas = zonas_od %>%
+  select(NumeroZona, NomeZona) %>%
+  st_transform(crs = st_crs(pop_setores_sp))
+
+setor_zona = st_join(pop_setores_sp,
+                     zonas,
+                     st_covered_by)
+
+st_geometry(setor_zona) = NULL
+
+pop_zona_censo = setor_zona %>%
+  group_by(NumeroZona) %>%
+  summarise(pop_censo = sum(pop)) %>%
+  filter(!is.na(NumeroZona))       # dropping the rest of SP State 
+
+pop_zona_od = OD_2017_v1 %>%
+  select(id_pess, zona, fe_pess) %>%        # OD is at the trip level, I need one obs/person
+  unique() %>%
+  group_by(zona) %>%
+  summarise(pop_zona = sum(fe_pess))
+
+zonas_pop = zonas %>%
+  left_join(pop_zona_od, by = c("NumeroZona"="zona")) %>%
+  left_join(pop_zona_censo, by = c("NumeroZona"="NumeroZona")) %>%
+  mutate(
+    diff_zona_censo = pop_zona - pop_censo,
+    diff_perc_od_censo = ((diff_zona_censo)/pop_censo)*100
+  )
+
+```
+
+```{r, echo=FALSE}
+
+tm_shape(zonas_pop) +
+  tm_fill(c("pop_zona", "pop_censo"),
+          breaks = c(0, 5000, 10000, 20000, 50000, 100000, 150000, 250000),
+          title = "População",
+          palette = "viridis") +
+  tm_facets(sync = TRUE, ncol = 2) +
+  tm_layout(panel.labels = c("OD2017", "Censo 2010"),
+            legend.outside = TRUE)
+
+```
+
+Some people left São Paulo City, but is not significant relative to the total.
+
+```{r, echo=FALSE}
+
+diff_map = tm_shape(zonas_pop) +
+  tm_fill(c("diff_zona_censo"),
+          title = "Diferença (OD - Censo)",
+          palette = c("red","white","blue"),
+          midpoint = 0) +
+  tm_layout(legend.outside = TRUE,
+            legend.text.size = 0.3)
+
+perc_change = tm_shape(zonas_pop) +
+  tm_fill(c("diff_perc_od_censo"),
+          title = "Diferença %",
+          breaks = c(seq(-150, 150, by=25)),
+          palette = c("red","white","blue"),
+          midpoint = 0) +
+  tm_layout(legend.outside = TRUE,
+            legend.text.size = 0.3)
+
+tmap_arrange(diff_map, perc_change, nrow = 1, ncol = 2)
+
+```
+
+
+```{r, echo=FALSE}
+
+tm_shape(distancias_zona) +
+  tm_fill("distancia_media",
+          style = "cont",
+          title = "Distância média das viagens (km)") +
+  tm_facets(by="motivo_simples", ncol=2)
+
+```
+
+```{r, echo=FALSE}
+
+tm_shape(distancias_commute_zona) +
+  tm_fill("distancia_media",
+          style = "cont",
+          title = "Distância média das viagens (km)") +
+  tm_facets(by="modo_simples", ncol=2) +
+  tm_layout(main.title = "Viagens com motivo trabalho (commute)",
+            main.title.position = "center")
+
+```
+
+
+#### Active travels and trip patterns (Desire lines)
 
 (I removed the previous visualizations since they were not saying anything about the data.)
 
@@ -754,7 +944,7 @@ foot_routes$tot_length = (units::set_units(st_length(foot_routes), km))*foot_rou
 ```
 
 obs.: very strange behavior here: st_buffer + st_make_valid makes one single polygon very small. without st_buffer, R does not even plot -- "C stack usage too close to ...". These operations seems to be necessary in the other geometries. 
-```{r, echo=FALSE}
+```{r, eval=FALSE}
 
  od_zones_sp = zonas_od %>%
    filter(NumeroMuni == 36) %>%
@@ -803,7 +993,7 @@ streets = readRDS("streets.Rds")
 
 ```
 
-```{r, echo=FALSE}
+```{r, eval=FALSE}
 
 od_zones = od_zones_sp %>%
   left_join(area_streets, by = c("NumeroZona")) %>%
@@ -815,7 +1005,7 @@ od_zones = od_zones_sp %>%
 
 ```
 
-```{r, echo=FALSE}
+```{r, eval=FALSE}
 
 street = tm_shape(od_zones) +
   tm_fill(col = "area_streets",
@@ -841,7 +1031,7 @@ OD pairs that generate the most intensive usage of space (kms traveled in the ro
 
 Very strong pattern here.
 
-```{r, echo=FALSE}
+```{r, eval=FALSE}
 
 foot_routes %>%
   filter(
@@ -864,7 +1054,7 @@ foot_routes %>%
 
 Some outliers in this graph, may be worth to check later...
 
-```{r, echo=FALSE}
+```{r, eval=FALSE}
 
 car_routes %>%
   filter(
