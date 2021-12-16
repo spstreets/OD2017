@@ -54,13 +54,13 @@ OD_2017_v1 = OD_2017_v1 %>%
 OD_2017_v1 %>%
   ggplot() +
   geom_bar(aes(n_modes, weight=fe_via)) +
-  scale_y_continuous(name = "Thousands of trips / day",
+  scale_y_continuous(name = "Milhares de viagens / dia",
                      labels=function(x) format(x/1000,
                                                big.mark = ",",
                                                decimal.mark = ".",
                                                scientific = FALSE)
                      ) +
-  ggtitle("Number of modes used in each trip") +
+  ggtitle("# de modos usados em cada viagem") +
   xlab("") +
   theme_bw()
 
@@ -86,13 +86,13 @@ OD_2017_v1 %>%
   filter(!is.na(modoprin)) %>%
   ggplot() +
   geom_bar(aes(modo_simples, weight=fe_via)) +
-  scale_y_continuous(name = "Thousands of trips / day",
+  scale_y_continuous(name = "Milhares de viagens / dia",
                      labels=function(x) format(x/1000,
                                                big.mark = ",",
                                                decimal.mark = ".",
                                                scientific = FALSE)
                      ) +
-  ggtitle("Modo Simples") +
+  ggtitle("Distribuição das viagens por modo") +
   xlab("") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 60, vjust = 1, hjust = 1))
@@ -106,11 +106,11 @@ Now the A/B Streets classification (foot, bike, car, public transport and other)
 OD_2017_v1 = OD_2017_v1 %>%
   dplyr::mutate(
     mode_ab_streets = case_when(
-      modoprin %in% 1:6 ~ "Public transport",
-      modoprin == 16 ~ "Foot",
-      modoprin==9 | modoprin==10 ~ "Car",
-      modoprin %in% c(7, 8, 11, 12, 13, 14, 17) ~ "Other",
-      modoprin==15 ~ "Bike"
+      modoprin %in% 1:6 ~ "Transporte público",
+      modoprin == 16 ~ "A pé",
+      modoprin==9 | modoprin==10 ~ "Carro",
+      modoprin %in% c(7, 8, 11, 12, 13, 14, 17) ~ "Outro",
+      modoprin==15 ~ "Bicicleta"
     )
   )
 
@@ -118,13 +118,13 @@ OD_2017_v1 %>%
   filter(!is.na(modoprin)) %>%
   ggplot() +
   geom_bar(aes(mode_ab_streets, weight=fe_via)) +
-  scale_y_continuous(name = "Thousands of trips / day",
+  scale_y_continuous(name = "Milhares de viagens / dia",
                      labels=function(x) format(x/1000,
                                                big.mark = ",",
                                                decimal.mark = ".",
                                                scientific = FALSE)
                      ) +
-  ggtitle("A/B Streets Classification") +
+  ggtitle("Classificação A/B Streets") +
   xlab("") +
   theme_bw() +
   theme(axis.text.x = element_text(angle = 60, vjust = 1, hjust = 1))
@@ -148,13 +148,13 @@ OD_2017_v1 %>%
   summarise(Trips = sum(fe_via)) %>%
   ggplot(aes(x = dist_bands, y = Trips, fill = modo_simples)) +
   geom_col() +
-  xlab("Distance (km)") +
-  scale_y_continuous(name = "Thousands of trips / day",
+  xlab("Distância (km)") +
+  scale_y_continuous(name = "Milhares de viagens / dia",
                      labels=function(x) format(x/1000,
                                                big.mark = ",",
                                                decimal.mark = ".",
                                                scientific = FALSE)) +
-  scale_fill_brewer(palette = "Set1", name = "Mode") +
+  scale_fill_brewer(palette = "Set1", name = "Modo") +
   theme_bw()
 
 ```
@@ -175,14 +175,14 @@ OD_2017_v1 %>%
   summarise(Trips = sum(fe_via)) %>%
   ggplot(aes(x = dist_bands, y = Trips, fill = mode_ab_streets)) +
   geom_col() +
-  ggtitle("A/B Streets Classification") +
-  xlab("Distance (km)") +
-  scale_y_continuous(name = "Thousands of trips / day",
+  ggtitle("Classificação A/B Streets") +
+  xlab("Distância (km)") +
+  scale_y_continuous(name = "Milhares de viagens / dia",
                      labels=function(x) format(x/1000,
                                                big.mark = ",",
                                                decimal.mark = ".",
                                                scientific = FALSE)) +
-  scale_fill_brewer(palette = "Set1", name = "Mode") +
+  scale_fill_brewer(palette = "Set1", name = "Modo") +
   theme_bw()
 
 ```
@@ -213,8 +213,8 @@ OD_2017_v1 %>%
   ggplot(aes(x = dist_bands, y = Trips, fill = motivo_simples)) +
   geom_col() +
   ggtitle("") +
-  xlab("Distance (km)") +
-  scale_y_continuous(name = "Thousands of trips / day",
+  xlab("Distância (km)") +
+  scale_y_continuous(name = "Milhares de viagens / dia",
                      labels=function(x) format(x/1000,
                                                big.mark = ",",
                                                decimal.mark = ".",
@@ -290,8 +290,8 @@ OD_2017_v1 %>%
   scale_linetype_manual(name="",
                         values = c("Saída"="solid", "Chegada"="dashed")
                         ) +
-  ylab("# of Trips") +
-  xlab("Hour") +
+  ylab("# de viagens") +
+  xlab("Hora") +
   facet_wrap(~modo_simples) +
   theme_bw()
 
@@ -319,9 +319,9 @@ OD_2017_v1 %>%
   scale_linetype_manual(name="",
                         values = c("Saída"="solid", "Chegada"="dashed")
                         ) +
-  ggtitle("A/B Streets Classification") +
-  ylab("# of Trips") +
-  xlab("Hour") +
+  ggtitle("Classificação A/B Streets") +
+  ylab("# de viagens") +
+  xlab("Hora") +
   facet_wrap(~mode_ab_streets, ncol = 2) +
   theme_bw()
 
@@ -359,9 +359,9 @@ OD = OD_2017_v1 %>%
     foot = ifelse(modoprin == 16, 1, 0)*fe_via,
     other = ifelse(modoprin %in% c(7, 8, 11, 12, 17), 1, 0)*fe_via,
     time = case_when(
-      h_saida >= 0 & h_saida < 10 ~ "Morning",
-      h_saida >= 10 & h_saida < 15 ~ "Noon",
-      h_saida >=15 & h_saida <= 23 ~ "Evening"
+      h_saida >= 0 & h_saida < 10 ~ "Manhã",
+      h_saida >= 10 & h_saida < 15 ~ "Tarde",
+      h_saida >=15 & h_saida <= 23 ~ "Noite"
     )
          ) %>%
   select(zona_o, zona_d, time, public, car, motorcycle, bike, foot, other) %>%
@@ -402,10 +402,10 @@ Plotting the origin zones by time.
 ```{r, echo=FALSE}
 
 tm_shape(origin) + tm_fill("trips_o_km2", 
-                           style = "cont",
-                           title = "Trips/km²")  +
+                           style = "jenks",
+                           title = "Viagens/km²")  +
   tm_facets(by="time", nrow=3) +
-  tm_layout(title = "São Paulo Metro Region - Origins",
+  tm_layout(title = "RMSP: Origens",
             inner.margins = c(0, .02, .02, .02),
             legend.outside = TRUE)
 
@@ -416,10 +416,10 @@ Plotting the destination zones by time.
 ```{r, echo=FALSE}
 
 tm_shape(destination) + tm_fill("trips_d_km2", 
-                                style = "cont",
-                                title = "Trips/km²") +
+                                style = "jenks",
+                                title = "Viagens/km²") +
   tm_facets(by="time", nrow=3) +
-  tm_layout(title = "São Paulo Metro Region - Destinations",
+  tm_layout(title = "RMSP: Destinos",
             inner.margins = c(0, .02, .02, .02),
             legend.outside = TRUE)
 
@@ -433,10 +433,10 @@ origin %>%
   filter(NomeMunici == "São Paulo") %>%
   tm_shape() +
   tm_fill("trips_o_km2",
-          style = "cont",
-          title = "Trips/km²") +
+          style = "jenks",
+          title = "Viagens/km²") +
   tm_facets(by="time", ncol=3) +
-  tm_layout(title = "São Paulo City - Origins",
+  tm_layout(title = "São Paulo - Origens",
             inner.margins = c(0, .02, .02, .02),
             legend.outside = TRUE)
 
@@ -450,7 +450,7 @@ destination %>%
   filter(NomeMunici == "São Paulo") %>%
   tm_shape() +
   tm_fill("trips_d_km2",
-          style = "cont",
+          style = "jenks",
           title = "Trips/km²") +
   tm_facets(by="time", ncol=3) +
   tm_layout(title = "São Paulo City - Destinations",
@@ -509,13 +509,13 @@ Looking at the population data here.
 
 populacao = tm_shape(pop_zona) +
   tm_polygons("pop",
-              style = "cont",
+              style = "jenks",
               title = "População",
               lwd = .25)
 
 densidade = tm_shape(pop_zona) +
   tm_polygons("densidade",
-              style = "cont",
+              style = "jenks",
               title = "População/ha",
               lwd = .25)
 
@@ -576,9 +576,8 @@ zonas_pop = zonas %>%
 
 tm_shape(zonas_pop) +
   tm_fill(c("pop_zona", "pop_censo"),
-          breaks = c(0, 5000, 10000, 20000, 50000, 100000, 150000, 250000),
-          title = "População",
-          palette = "viridis") +
+          style = 'jenks',
+          title = "População") +
   tm_facets(sync = TRUE, ncol = 2) +
   tm_layout(panel.labels = c("OD2017", "Censo 2010"),
             legend.outside = TRUE)
@@ -625,10 +624,10 @@ tm_shape(distancias_zona) +
 
 tm_shape(distancias_commute_zona) +
   tm_fill("distancia_media",
-          style = "cont",
+          style = "jenks",
           title = "Distância média das viagens (km)") +
   tm_facets(by="modo_simples", ncol=2) +
-  tm_layout(main.title = "Viagens com motivo trabalho (commute)",
+  tm_layout(main.title = "Viagens com motivo trabalho",
             main.title.position = "center")
 
 ```
@@ -686,10 +685,10 @@ tm_shape(desire_lines_bike) +
            breaks = c(0, 10, 25, 50, 75, 100),
            lwd = "trips",
            scale = 15,
-           title.lwd = "Number of trips",
+           title.lwd = "# de viagens",
            alpha = 0.8,
            col = "bike_share",
-           title = "Bike trips (%)") +
+           title = "Viagens de bicicleta (%)") +
   tm_shape(zonas_od) +
   tm_borders(col = "lightgrey", lwd = 0.2) +
   tm_scale_bar()
@@ -707,10 +706,10 @@ tm_shape(desire_lines_foot) +
            breaks = c(0, 10, 25, 50, 75, 100),
            lwd = "trips",
            scale = 15,
-           title.lwd = "Number of trips",
+           title.lwd = "# de viagens",
            alpha = 0.8,
            col = "foot_share",
-           title = "Foot trips (%)") +
+           title = "Viagens a pé (%)") +
   tm_shape(zonas_od) +
   tm_borders(col = "lightgrey", lwd = 0.2) +
   tm_scale_bar()
@@ -728,10 +727,10 @@ tm_shape(desire_lines_car) +
            breaks = c(0, 10, 25, 50, 75, 100),
            lwd = "trips",
            scale = 15,
-           title.lwd = "Number of trips",
+           title.lwd = "# de viagens",
            alpha = 0.8,
            col = "car_share",
-           title = "Car trips (%)") +
+           title = "Viagens de carro (%)") +
   tm_shape(zonas_od) +
   tm_borders(col = "lightgrey", lwd = 0.2) +
   tm_scale_bar()
