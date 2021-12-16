@@ -451,9 +451,9 @@ destination %>%
   tm_shape() +
   tm_fill("trips_d_km2",
           style = "jenks",
-          title = "Trips/km²") +
+          title = "Viagens/km²") +
   tm_facets(by="time", ncol=3) +
-  tm_layout(title = "São Paulo City - Destinations",
+  tm_layout(title = "São Paulo - Destinos",
             inner.margins = c(0, .02, .02, .02),
             legend.outside = TRUE)
 
