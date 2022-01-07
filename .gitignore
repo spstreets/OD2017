@@ -5,6 +5,7 @@
 *.rda
 *.Rds
 *.html
+*.geojson
 *.rar
 *.gpkg*
 SAD69-96_SHP_redecicloviaria*
