@@ -1,6 +1,8 @@
 library(sf)
 library(tidyverse)
 
+piggyback::pb_download()
+
 centro_expandido = st_read("./centro_expandido.geojson")
 zonas_od = readRDS("./zonas_od.Rds")
 
