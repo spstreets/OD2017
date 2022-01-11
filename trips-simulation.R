@@ -59,7 +59,19 @@ system("odjitter --od-csv-path ./od_sp_center.csv --zones-path ./zones_sp_center
 ")
 
 od_jittered = sf::read_sf("result.geojson")
-routes_fast = route(l = od_jittered, route_fun = cyclestreets::journey)
+# routes_fast = route(l = od_jittered, route_fun = cyclestreets::journey)
+#
+# # These routes failed: 1, 274, 424, 577, 609, 787, 943, 1197, 1285, 1349, 1385, 2025, 2092, 2230, 2336, 2356, 2369, 2371, 2485, 2490, 2571, 2811, 3009, 3281, 3285, 3314, 3436, 3446, 3639, 3683, 3809, 3977, 4032, 4063, 4111, 4672, 4723, 4727, 4729, 4835, 4842, 4872, 4920, 4937, 4965, 4966, 4975, 5059, 5167, 5234, 5589, 5595, 5629, 5651, 5754, 5841, 5914, 5976, 5978, 5983, 5984, 6022, 6247, 6328, 6497, 6499, 6518, 6818, 6925, 6938
+# # The first of which was:
+# #   <simpleError in stats::filter(x, rep(1/n, n), sides = 2): 'filter' is longer than time series>
+# piggyback::pb_upload("routes_fast.geojson")
+# piggyback::pb_download_url("routes_fast.geojson")
+routes_fast = sf::read_sf("routes_fast.geojson")
+
+# After that: group the routes by unique origin and destination and calculate the scenarios, e.g.
+# building on this:
+#   https://github.com/ITSLeeds/pct/blob/1bc8b202b2fc9d1436b973bf97523777adca9523/data-raw/training-dec-2021.Rmd#L471
+
 
 # After that: group the routes by unique origin and destination and calculate the scenarios, e.g.
 # building on this:
