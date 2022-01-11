@@ -1,5 +1,6 @@
 library(sf)
 library(tidyverse)
+library(stplanr)
 
 piggyback::pb_download()
 
@@ -57,3 +58,5 @@ st_write(zonas_od_centro, "./zones_sp_center.geojson", append = FALSE)
 system("odjitter --od-csv-path ./od_sp_center.csv --zones-path ./zones_sp_center.geojson --max-per-od 50000 --output-path result.geojson
 ")
 
+od_jittered = sf::read_sf("result.geojson")
+routes_fast = route(l = od_jittered, route_fun = cyclestreets::journey)
