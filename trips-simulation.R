@@ -60,3 +60,7 @@ system("odjitter --od-csv-path ./od_sp_center.csv --zones-path ./zones_sp_center
 
 od_jittered = sf::read_sf("result.geojson")
 routes_fast = route(l = od_jittered, route_fun = cyclestreets::journey)
+
+# After that: group the routes by unique origin and destination and calculate the scenarios, e.g.
+# building on this:
+#   https://github.com/ITSLeeds/pct/blob/1bc8b202b2fc9d1436b973bf97523777adca9523/data-raw/training-dec-2021.Rmd#L471
