@@ -5,6 +5,7 @@ library(tmap)
 tmap_mode("view") # interactive maps
 # piggyback::pb_download() # download data files
 library(pct)
+library(patchwork)
 
 OD_2017_v1 = readRDS("./OD_2017_v1.Rds")
 centro_expandido = st_read("./centro_expandido.geojson")
@@ -81,12 +82,16 @@ names(routes_fast)
 # building on this:
 #   https://github.com/ITSLeeds/pct/blob/1bc8b202b2fc9d1436b973bf97523777adca9523/data-raw/training-dec-2021.Rmd#L471
 
-routes_fast_active = routes_fast %>%
+routes_fast_base = routes_fast %>%
   group_by(geo_code1, geo_code2) %>%
   mutate(
-    rf_dist_km = length,
+    rf_dist_km = length / 1000,
     rf_avslope_perc = mean(gradient_smooth),
-    dist_bands = cut(x = rf_dist_km, breaks = c(0, 1, 3, 6, 10, 15, 20, 30, 1000), include.lowest = TRUE),
+    dist_bands = cut(x = rf_dist_km, breaks = c(0, 1, 3, 6, 10, 15, 20, 30, 1000), include.lowest = TRUE)
+  )
+
+routes_fast_active = routes_fast_base %>%
+  mutate(
     foot_increase_proportion = case_when(
       # specifies that 50% of car journeys <1km in length will be replaced with walking
       rf_dist_km < 1 ~ 0.5,
@@ -108,11 +113,25 @@ routes_fast_active = routes_fast %>%
     bike = bike + car_reduction
   )
 
+col_modes = c("#fe5f55", "grey", "#ffd166", "#90be6d", "#457b9d")
+# Plot bar chart showing modal share by distance band for existing journeys
+base_results = routes_fast_base %>%
+  sf::st_drop_geometry() %>%
+  dplyr::select(dist_bands, car, other, public, bike, foot) %>%
+  tidyr::pivot_longer(cols = matches("car|other|publ|bike|foot"), names_to = "mode") %>%
+  mutate(mode = factor(mode, levels = c("car", "other", "public", "bike", "foot"), ordered = TRUE)) %>%
+  group_by(dist_bands, mode) %>%
+  summarise(Trips = sum(value))
+g1 = ggplot(base_results) +
+  geom_col(aes(dist_bands, Trips, fill = mode)) +
+  scale_fill_manual(values = col_modes) + ylab("Trips")
+g1
+
 active_results = routes_fast_active %>%
   sf::st_drop_geometry() %>%
-  dplyr::select(dist_bands, car, other, public_transport, bicycle, foot) %>%
-  tidyr::pivot_longer(cols = matches("car|other|publ|cy|foot"), names_to = "mode") %>%
-  mutate(mode = factor(mode, levels = c("car", "other", "public_transport", "bicycle", "foot"), ordered = TRUE)) %>%
+  dplyr::select(dist_bands, car, other, public, bike, foot) %>%
+  tidyr::pivot_longer(cols = matches("car|other|publ|bike|foot"), names_to = "mode") %>%
+  mutate(mode = factor(mode, levels = c("car", "other", "public", "bike", "foot"), ordered = TRUE)) %>%
   group_by(dist_bands, mode) %>%
   summarise(Trips = sum(value))
 g2 = ggplot(active_results) +
@@ -120,6 +139,8 @@ g2 = ggplot(active_results) +
   scale_fill_manual(values = col_modes) + ylab("Trips")
 g2
 
+
+g1 + g2
 # After that: group the routes by unique origin and destination and calculate the scenarios, e.g.
 # building on this:
 #   https://github.com/ITSLeeds/pct/blob/1bc8b202b2fc9d1436b973bf97523777adca9523/data-raw/training-dec-2021.Rmd#L471
