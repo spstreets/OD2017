@@ -151,14 +151,18 @@ g2 = ggplot(active_results) +
   scale_fill_manual(values = col_modes) + ylab("Trips")
 g2
 
-rnet_brks = c(0, 10, 50, 100, 500, 1000, 5000)
+rnet_brks = c(0, 10, 100, 500, 1000, 5000, 12000)       # keep consistent with the active scenario
 rnet_base_cycle = overline(routes_fast_base, "bike")
 rnet_base_cycle %>%
   top_n(10000, bike) %>%
   tm_shape() +
   tm_lines("bike", palette = "-viridis", breaks = rnet_brks)
 
-# Todo: create equivalent rnet plot for Go Active results
+rnet_active_cycle = overline(routes_fast_active, "bike")
+rnet_active_cycle %>%
+  top_n(10000, bike) %>%
+  tm_shape() +
+  tm_lines("bike", palette = "-viridis", breaks = rnet_brks)
 
 g1 + g2
 # After that: group the routes by unique origin and destination and calculate the scenarios, e.g.
