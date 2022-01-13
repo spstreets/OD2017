@@ -58,7 +58,6 @@ zonas_od_centro = zonas_od %>%
 write_csv(viagens_centro, "./od_sp_center.csv")
 st_write(zonas_od_centro, "./zones_sp_center.geojson", append = FALSE)
 
-
 system("odjitter --od-csv-path ./od_sp_center.csv --zones-path ./zones_sp_center.geojson --max-per-od 50000 --output-path result.geojson")
 
 # TODO: sample from the road network, e.g. with:
@@ -68,6 +67,7 @@ od_jittered = sf::read_sf("result.geojson")
 od_jittered %>%
   top_n(1000, all) %>%
   qtm()
+
 # routes_fast = route(l = od_jittered, route_fun = cyclestreets::journey)
 #
 # # These routes failed: 1, 274, 424, 577, 609, 787, 943, 1197, 1285, 1349, 1385, 2025, 2092, 2230, 2336, 2356, 2369, 2371, 2485, 2490, 2571, 2811, 3009, 3281, 3285, 3314, 3436, 3446, 3639, 3683, 3809, 3977, 4032, 4063, 4111, 4672, 4723, 4727, 4729, 4835, 4842, 4872, 4920, 4937, 4965, 4966, 4975, 5059, 5167, 5234, 5589, 5595, 5629, 5651, 5754, 5841, 5914, 5976, 5978, 5983, 5984, 6022, 6247, 6328, 6497, 6499, 6518, 6818, 6925, 6938
@@ -77,6 +77,18 @@ od_jittered %>%
 # piggyback::pb_download_url("routes_fast.geojson")
 routes_fast = sf::read_sf("routes_fast.geojson")
 names(routes_fast)
+
+# routes_car = route(l = od_jittered,
+#                    route_fun = route_osrm,
+#                    osrm.profile = "car")
+# # These routes failed: 514, 2438, 5720, 6259
+# # The first of which was:
+# #  <simpleError in open.connection(con, "rb"): cannot open the connection to 'https://routing.openstreetmap.de/routed-car/route/v1/driving/-46.6348553708288,-23.5349495769585;-46.6259491874601,-23.5402833338891?alternatives=false&geometries=geojson&steps=false&overview=full'>
+# write_sf(routes_car, "routes_car_center.geojson")
+# piggyback::pb_upload("routes_car_center.geojson")
+# piggyback::pb_download("routes_car_center.geojson")
+routes_car = sf::read_sf("routes_car_center.geojson")
+names(routes_car)
 
 # After that: group the routes by unique origin and destination and calculate the scenarios, e.g.
 # building on this:
