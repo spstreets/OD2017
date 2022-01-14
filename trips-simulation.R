@@ -11,6 +11,9 @@ OD_2017_v1 = readRDS("./OD_2017_v1.Rds")
 centro_expandido = st_read("./centro_expandido.geojson")
 zonas_od = readRDS("./zonas_od.Rds")
 
+tm_shape(centro_expandido) +
+  tm_polygons(col = "red", alpha = 0.25, border.col = "red")
+
 zonas_od_centro = zonas_od %>%          # sf_use_s2(FALSE)
   st_centroid() %>%
   st_transform(crs = "WGS84") %>%
@@ -134,9 +137,18 @@ base_results = routes_fast_base %>%
   mutate(mode = factor(mode, levels = c("car", "other", "public", "bike", "foot"), ordered = TRUE)) %>%
   group_by(dist_bands, mode) %>%
   summarise(Trips = sum(value))
+
 g1 = ggplot(base_results) +
   geom_col(aes(dist_bands, Trips, fill = mode)) +
-  scale_fill_manual(values = col_modes) + ylab("Trips")
+  ggtitle("Cenário base") +
+  xlab("Distância (km)") +
+  scale_y_continuous(name = "Milhares de viagens / dia",
+                     labels=function(x) format(x/1000,
+                                               big.mark = ",",
+                                               decimal.mark = ".",
+                                               scientific = FALSE)) +
+  scale_fill_manual(values = col_modes, name = "Modo") +
+  theme_bw()
 g1
 
 active_results = routes_fast_active %>%
@@ -146,9 +158,18 @@ active_results = routes_fast_active %>%
   mutate(mode = factor(mode, levels = c("car", "other", "public", "bike", "foot"), ordered = TRUE)) %>%
   group_by(dist_bands, mode) %>%
   summarise(Trips = sum(value))
+
 g2 = ggplot(active_results) +
   geom_col(aes(dist_bands, Trips, fill = mode)) +
-  scale_fill_manual(values = col_modes) + ylab("Trips")
+  ggtitle(expression(paste("Cenário ", italic("Go Active")))) +
+  xlab("Distância (km)") +
+  scale_y_continuous(name = "Milhares de viagens / dia",
+                     labels=function(x) format(x/1000,
+                                               big.mark = ",",
+                                               decimal.mark = ".",
+                                               scientific = FALSE)) +
+  scale_fill_manual(values = col_modes, name = "Modo") +
+  theme_bw()
 g2
 
 rnet_brks = c(0, 10, 100, 500, 1000, 5000, 12000)       # keep consistent with the active scenario
