@@ -183,16 +183,37 @@ g2 = ggplot(active_results) +
   theme_bw()
 g2
 
+routes_fast_base$geo_type = st_geometry_type(routes_fast_base$geometry)
+
+routes_fast_base1 = routes_fast_base %>%
+  filter(geo_type == "MULTILINESTRING") %>%
+  st_cast("LINESTRING")                       # repeats the multilinestrings in several single linestrings if the df has only multilnestrings
+
+routes_fast_base2 = routes_fast_base %>%
+  filter(geo_type == "LINESTRING")
+
+routes_fast_base_fixed = rbind(routes_fast_base1, routes_fast_base2)
+
 rnet_brks = c(0, 10, 100, 500, 1000, 5000, 12000)       # keep consistent with the active scenario
-rnet_base_cycle = overline(routes_fast_base, "bike")
+rnet_base_cycle = overline(routes_fast_base_fixed, "bike")
 rnet_base_cycle %>%
-  top_n(10000, bike) %>%
   tm_shape() +
   tm_lines("bike", palette = "-viridis", breaks = rnet_brks)
 
-rnet_active_cycle = overline(routes_fast_active, "bike")
+
+routes_fast_active$geo_type = st_geometry_type(routes_fast_active$geometry)
+
+routes_fast_active1 = routes_fast_active %>%
+  filter(geo_type == "MULTILINESTRING") %>%
+  st_cast("LINESTRING")                       # repeats the multilinestrings in several single linestrings if the df has only multilnestrings
+
+routes_fast_active2 = routes_fast_active %>%
+  filter(geo_type == "LINESTRING")
+
+routes_fast_active_fixed = rbind(routes_fast_active1, routes_fast_active2)
+
+rnet_active_cycle = overline(routes_fast_active_fixed, "bike")
 rnet_active_cycle %>%
-  top_n(10000, bike) %>%
   tm_shape() +
   tm_lines("bike", palette = "-viridis", breaks = rnet_brks)
 
