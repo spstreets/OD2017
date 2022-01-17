@@ -103,7 +103,18 @@ routes_fast_base = routes_fast %>%
     rf_dist_km = length / 1000,
     rf_avslope_perc = mean(gradient_smooth),
     dist_bands = cut(x = rf_dist_km, breaks = c(0, 1, 3, 6, 10, 15, 20, 30, 1000), include.lowest = TRUE)
-  )
+  ) %>%
+  summarise(geometry = st_union(geometry),
+            all = first(all),
+            car = first(car),
+            bike = first(bike),
+            foot = first(foot),
+            public = first(public),
+            other = first(other),
+            rf_dist_km = first(rf_dist_km),
+            rf_avslope_perc = first(rf_avslope_perc),
+            dist_bands = first(dist_bands)
+            )
 
 routes_fast_active = routes_fast_base %>%
   mutate(
