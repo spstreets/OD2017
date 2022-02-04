@@ -221,3 +221,22 @@ g1 + g2
 # After that: group the routes by unique origin and destination and calculate the scenarios, e.g.
 # building on this:
 #   https://github.com/ITSLeeds/pct/blob/1bc8b202b2fc9d1436b973bf97523777adca9523/data-raw/training-dec-2021.Rmd#L471
+
+# area_traffic_calming = st_read("/home/lucas/Downloads/areatargetfortrafficcalming/perimetro_sm.shp")
+# st_write(area_traffic_calming, "area_traffic_calming.gpkg")
+# piggyback::pb_upload("area_traffic_calming.gpkg")
+# piggyback::pb_download("area_traffic_calming.gpkg")
+
+area_traffic_calming = st_read("area_traffic_calming.gpkg")
+
+zonas_od_area = zonas_od %>%          # sf_use_s2(FALSE)
+  st_centroid() %>%
+  st_transform(crs = "WGS84") %>%
+  mutate(dentro_area = st_within(.,
+                                   area_traffic_calming,
+                                   sparse=FALSE)
+  ) %>%
+  filter(dentro_area == TRUE)
+
+trips_inside_area = OD_2017_v1 %>%
+  filter(zona_o %in% unique(zonas_od_area$NumeroZona) | zona_d %in% (unique(zonas_od_area$NumeroZona)))
