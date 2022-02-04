@@ -239,4 +239,20 @@ zonas_od_area = zonas_od %>%          # sf_use_s2(FALSE)
   filter(dentro_area == TRUE)
 
 trips_inside_area = OD_2017_v1 %>%
-  filter(zona_o %in% unique(zonas_od_area$NumeroZona) | zona_d %in% (unique(zonas_od_area$NumeroZona)))
+  filter(zona_o %in% unique(zonas_od_area$NumeroZona) | zona_d %in% (unique(zonas_od_area$NumeroZona))) %>%
+  od2line(., zonas_od) %>%
+  od::od_jitter(., zonas_od) %>%
+  st_transform(crs = "WGS84")
+
+car_routes_area = route(l = trips_inside_area,
+                        route_fun = route_osrm,
+                        osrm.profile = "car")
+
+st_write(car_routes_area, "car_routes_area_04-02-2022.gpkg")
+
+bike_routes_area = route(l = trips_inside_area,
+                         route_fun = cyclestreets::journey)
+
+st_write(bike_routes_area, "bike_routes_area_04-02-2022.gpkg")
+
+
