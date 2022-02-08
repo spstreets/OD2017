@@ -200,7 +200,6 @@ rnet_base_cycle %>%
   tm_shape() +
   tm_lines("bike", palette = "-viridis", breaks = rnet_brks)
 
-
 routes_fast_active$geo_type = st_geometry_type(routes_fast_active$geometry)
 
 routes_fast_active1 = routes_fast_active %>%
@@ -218,6 +217,7 @@ rnet_active_cycle %>%
   tm_lines("bike", palette = "-viridis", breaks = rnet_brks)
 
 g1 + g2
+
 # After that: group the routes by unique origin and destination and calculate the scenarios, e.g.
 # building on this:
 #   https://github.com/ITSLeeds/pct/blob/1bc8b202b2fc9d1436b973bf97523777adca9523/data-raw/training-dec-2021.Rmd#L471
@@ -244,15 +244,54 @@ trips_inside_area = OD_2017_v1 %>%
   od::od_jitter(., zonas_od) %>%
   st_transform(crs = "WGS84")
 
-car_routes_area = route(l = trips_inside_area,
-                        route_fun = route_osrm,
-                        osrm.profile = "car")
+# car_routes_area = route(l = trips_inside_area,
+#                         route_fun = route_osrm,
+#                         osrm.profile = "car")
 
-st_write(car_routes_area, "car_routes_area_04-02-2022.gpkg")
+# st_write(car_routes_area, "car_routes_area_04-02-2022.gpkg")
 
-bike_routes_area = route(l = trips_inside_area,
-                         route_fun = cyclestreets::journey)
+# bike_routes_area = route(l = trips_inside_area,
+#                         route_fun = cyclestreets::journey)
 
-st_write(bike_routes_area, "bike_routes_area_04-02-2022.gpkg")
+# st_write(bike_routes_area, "bike_routes_area_04-02-2022.gpkg")
 
+# ------------------------------------------------------------------------------
 
+OD_2017_v1 %>%
+  select(zona_o, zona_d, modoprin, fe_via) %>%
+  filter( (zona_o %in% unique(zonas_od_area$NumeroZona) | zona_d %in% (unique(zonas_od_area$NumeroZona))) & !is.na(modoprin)) %>%
+  mutate(
+    mode_ab_streets = case_when(
+      modoprin %in% 1:6 ~ "public",
+      modoprin == 16 ~ "foot",
+      modoprin == 9 | modoprin == 10 ~ "car",
+      modoprin %in% c(7, 8, 11, 12, 13, 14, 17) ~ "other",
+      modoprin == 15 ~ "bike"
+    )
+  ) %>%
+  group_by(zona_o, zona_d, mode_ab_streets) %>%
+  summarise(trips = round(sum(fe_via))) %>%          # round to avoid decimals (sampling weights here...)
+  ungroup() %>%
+  pivot_wider(names_from = mode_ab_streets,
+              values_from = trips) %>%
+  replace(is.na(.), 0) %>%
+  mutate(all = public + foot + car + other + bike) %>%
+  write_csv("./od_sao_miguel.csv")
+
+st_write(zonas_od %>% mutate(NumeroZona = as.character(NumeroZona)) %>% st_transform(crs = 4326),
+         "zonas_od.geojson",
+         append=FALSE)
+
+jitter_query = paste0("odjitter ",
+                      "--od-csv-path ./od_sao_miguel.csv ",
+                      "--origin-key zona_o ",
+                      "--destination-key zona_d ",
+                      "--zones-path ./zonas_od.geojson ",
+                      "--zone-name-key NumeroZona ",
+                      "--max-per-od 1 ",
+                      "--output-path ./sao-miguel-jittered.geojson "
+                      )
+
+system(jitter_query)
+
+sao_miguel_jittered = st_read("./sao-miguel-jittered.geojson")
