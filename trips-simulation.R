@@ -8,28 +8,15 @@ library(pct)
 library(patchwork)
 
 OD_2017_v1 = readRDS("./OD_2017_v1.Rds")
-centro_expandido = st_read("./centro_expandido.geojson")
 zonas_od = readRDS("./zonas_od.Rds")
 
-tm_shape(centro_expandido) +
-  tm_polygons(col = "red", alpha = 0.25, border.col = "red")
-
-zonas_od_centro = zonas_od %>%          # sf_use_s2(FALSE)
-  st_centroid() %>%
-  st_transform(crs = "WGS84") %>%
-  mutate(dentro_centro = st_within(.,
-                                   centro_expandido,
-                                   sparse=FALSE)
-  ) %>%
-  filter(dentro_centro == TRUE)
-
-viagens_centro = OD_2017_v1 %>%
-  select(zona_o, zona_d, modoprin, fe_via) %>%
+viagens_sp = OD_2017_v1 %>%
   filter(
     (!is.na(modoprin)) &
-    (zona_o %in% unique(zonas_od_centro$NumeroZona)) &
-    (zona_d %in% unique(zonas_od_centro$NumeroZona))
-    ) %>%
+      (muni_o == 36) &
+      (muni_d == 36)
+  ) %>%
+  select(zona_o, zona_d, modoprin, fe_via) %>%
   mutate(
     mode_ab_streets = case_when(
       modoprin %in% 1:6 ~ "public",
@@ -46,39 +33,36 @@ viagens_centro = OD_2017_v1 %>%
               values_from = trips) %>%
   replace(is.na(.), 0) %>%
   mutate(all = public + foot + car + other + bike) %>%
-  rename(geo_code1 = zona_o,
-         geo_code2 = zona_d) %>%
-  mutate(geo_code1 = as.character(geo_code1),
-         geo_code2 = as.character(geo_code2)
+  mutate(geo_code1 = as.character(zona_o),
+         geo_code2 = as.character(zona_d)
          )
 
-zonas_od_centro = zonas_od %>%
-  filter(NumeroZona %in% unique(zonas_od_centro$NumeroZona)) %>%
+zonas_od_sp = zonas_od %>%
+  filter(NomeMunici == "São Paulo") %>%
   st_transform("WGS84") %>%
-  rename(InterZone = NumeroZona) %>%
-  mutate(InterZone = as.character(InterZone))
+  mutate(InterZone = as.character(NumeroZona))
 
-write_csv(viagens_centro, "./od_sp_center.csv")
-st_write(zonas_od_centro, "./zones_sp_center.geojson", append = FALSE)
+write_csv(viagens_sp, "./od_sp.csv")
+st_write(zonas_od_sp, "./zones_sp.geojson", append = FALSE)
 
-system("odjitter --od-csv-path ./od_sp_center.csv --zones-path ./zones_sp_center.geojson --max-per-od 50000 --output-path result.geojson")
+system("odjitter --od-csv-path ./od_sp.csv --zones-path ./zones_sp.geojson --max-per-od 500000 --output-path trips_sp_jittered.geojson")
 
 # TODO: sample from the road network, e.g. with:
 # system("odjitter --od-csv-path ./od_sp_center.csv --zones-path ./zones_sp_center.geojson --subpoints-path osm_network.geojson --max-per-od 50000 --output-path result.geojson")
 
-od_jittered = sf::read_sf("result.geojson")
+od_jittered = sf::read_sf("trips_sp_jittered.geojson")
 od_jittered %>%
   top_n(1000, all) %>%
   qtm()
 
-# routes_fast = route(l = od_jittered, route_fun = cyclestreets::journey)
+routes_fast = route(l = od_jittered, route_fun = cyclestreets::journey)
 #
 # # These routes failed: 1, 274, 424, 577, 609, 787, 943, 1197, 1285, 1349, 1385, 2025, 2092, 2230, 2336, 2356, 2369, 2371, 2485, 2490, 2571, 2811, 3009, 3281, 3285, 3314, 3436, 3446, 3639, 3683, 3809, 3977, 4032, 4063, 4111, 4672, 4723, 4727, 4729, 4835, 4842, 4872, 4920, 4937, 4965, 4966, 4975, 5059, 5167, 5234, 5589, 5595, 5629, 5651, 5754, 5841, 5914, 5976, 5978, 5983, 5984, 6022, 6247, 6328, 6497, 6499, 6518, 6818, 6925, 6938
 # # The first of which was:
 # #   <simpleError in stats::filter(x, rep(1/n, n), sides = 2): 'filter' is longer than time series>
 # piggyback::pb_upload("routes_fast.geojson")
 # piggyback::pb_download_url("routes_fast.geojson")
-routes_fast = sf::read_sf("routes_fast.geojson")
+routes_fast = sf::read_sf("routes_sp_city.gpkg")
 names(routes_fast)
 
 # routes_car = route(l = od_jittered,
@@ -90,8 +74,8 @@ names(routes_fast)
 # write_sf(routes_car, "routes_car_center.geojson")
 # piggyback::pb_upload("routes_car_center.geojson")
 # piggyback::pb_download("routes_car_center.geojson")
-routes_car = sf::read_sf("routes_car_center.geojson")
-names(routes_car)
+# routes_car = sf::read_sf("routes_car_center.geojson")
+# names(routes_car)
 
 # After that: group the routes by unique origin and destination and calculate the scenarios, e.g.
 # building on this:
@@ -194,8 +178,10 @@ routes_fast_base2 = routes_fast_base %>%
 
 routes_fast_base_fixed = rbind(routes_fast_base1, routes_fast_base2)
 
-rnet_brks = c(0, 10, 100, 500, 1000, 5000, 12000)       # keep consistent with the active scenario
+rnet_brks = c(0, 100, 500, 1000, 5000, 10000, 20000)       # keep consistent with the active scenario
+
 rnet_base_cycle = overline(routes_fast_base_fixed, "bike")
+
 rnet_base_cycle %>%
   tm_shape() +
   tm_lines("bike", palette = "-viridis", breaks = rnet_brks)
@@ -212,6 +198,7 @@ routes_fast_active2 = routes_fast_active %>%
 routes_fast_active_fixed = rbind(routes_fast_active1, routes_fast_active2)
 
 rnet_active_cycle = overline(routes_fast_active_fixed, "bike")
+
 rnet_active_cycle %>%
   tm_shape() +
   tm_lines("bike", palette = "-viridis", breaks = rnet_brks)
