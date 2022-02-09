@@ -55,7 +55,7 @@ od_jittered %>%
   top_n(1000, all) %>%
   qtm()
 
-routes_fast = route(l = od_jittered, route_fun = cyclestreets::journey)
+# routes_fast = route(l = od_jittered, route_fun = cyclestreets::journey)
 #
 # # These routes failed: 1, 274, 424, 577, 609, 787, 943, 1197, 1285, 1349, 1385, 2025, 2092, 2230, 2336, 2356, 2369, 2371, 2485, 2490, 2571, 2811, 3009, 3281, 3285, 3314, 3436, 3446, 3639, 3683, 3809, 3977, 4032, 4063, 4111, 4672, 4723, 4727, 4729, 4835, 4842, 4872, 4920, 4937, 4965, 4966, 4975, 5059, 5167, 5234, 5589, 5595, 5629, 5651, 5754, 5841, 5914, 5976, 5978, 5983, 5984, 6022, 6247, 6328, 6497, 6499, 6518, 6818, 6925, 6938
 # # The first of which was:
@@ -86,9 +86,9 @@ routes_fast_base = routes_fast %>%
   mutate(
     rf_dist_km = length / 1000,
     rf_avslope_perc = mean(gradient_smooth),
-    dist_bands = cut(x = rf_dist_km, breaks = c(0, 1, 3, 6, 10, 15, 20, 30, 1000), include.lowest = TRUE)
+    dist_bands = cut(x = rf_dist_km, breaks = c(0, 1, 3, 6, 10, 15, 20, 30, 60), include.lowest = TRUE)
   ) %>%
-  summarise(geometry = st_union(geometry),
+  summarise(geometry = st_union(geom),
             all = first(all),
             car = first(car),
             bike = first(bike),
