@@ -45,6 +45,7 @@ zonas_od_sp = zonas_od %>%
 write_csv(viagens_sp, "./od_sp.csv")
 st_write(zonas_od_sp, "./zones_sp.geojson", append = FALSE)
 
+# old version of odjitter (?)
 system("odjitter --od-csv-path ./od_sp.csv --zones-path ./zones_sp.geojson --max-per-od 500000 --output-path trips_sp_jittered.geojson")
 
 # TODO: sample from the road network, e.g. with:
@@ -262,23 +263,21 @@ OD_2017_v1 %>%
   pivot_wider(names_from = mode_ab_streets,
               values_from = trips) %>%
   replace(is.na(.), 0) %>%
-  mutate(all = public + foot + car + other + bike) %>%
   write_csv("./od_sao_miguel.csv")
 
 st_write(zonas_od %>% mutate(NumeroZona = as.character(NumeroZona)) %>% st_transform(crs = 4326),
          "zonas_od.geojson",
          append=FALSE)
 
-jitter_query = paste0("odjitter ",
+jitter_query = paste0("odjitter disaggregate ",
                       "--od-csv-path ./od_sao_miguel.csv ",
                       "--origin-key zona_o ",
                       "--destination-key zona_d ",
                       "--zones-path ./zonas_od.geojson ",
                       "--zone-name-key NumeroZona ",
-                      "--max-per-od 1 ",
-                      "--output-path ./sao-miguel-jittered.geojson "
+                      "--output-path ./sao-miguel-disaggregated.geojson "
                       )
 
 system(jitter_query)
 
-sao_miguel_jittered = st_read("./sao-miguel-jittered.geojson")
+sao_miguel_disaggregated = st_read("./sao-miguel-disaggregated.geojson")
