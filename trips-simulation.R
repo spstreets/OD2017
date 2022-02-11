@@ -5,6 +5,7 @@ library(tmap)
 tmap_mode("view") # interactive maps
 # piggyback::pb_download() # download data files
 library(pct)
+library(abstr)
 library(patchwork)
 
 OD_2017_v1 = readRDS("./OD_2017_v1.Rds")
@@ -280,4 +281,6 @@ jitter_query = paste0("odjitter disaggregate ",
 
 system(jitter_query)
 
-sao_miguel_disaggregated = st_read("./sao-miguel-disaggregated.geojson")
+sao_miguel_disaggregated_sample = st_read("./sao-miguel-disaggregated.geojson") %>%
+  sample_n(10000) %>%
+  st_write("scenario.geojson")
