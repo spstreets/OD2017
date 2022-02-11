@@ -260,11 +260,11 @@ OD_2017_v1 %>%
   filter( (zona_o %in% unique(zonas_od_area$NumeroZona) | zona_d %in% (unique(zonas_od_area$NumeroZona))) & !is.na(modoprin)) %>%
   mutate(
     mode_ab_streets = case_when(
-      modoprin %in% 1:6 ~ "public",
-      modoprin == 16 ~ "foot",
-      modoprin == 9 | modoprin == 10 ~ "car",
+      modoprin %in% 1:6 ~ "Transit",
+      modoprin == 16 ~ "Walk",
+      modoprin == 9 | modoprin == 10 ~ "Drive",
       modoprin %in% c(7, 8, 11, 12, 13, 14, 17) ~ "other",
-      modoprin == 15 ~ "bike"
+      modoprin == 15 ~ "Bike"
     )
   ) %>%
   group_by(zona_o, zona_d, mode_ab_streets) %>%
@@ -291,5 +291,12 @@ jitter_query = paste0("odjitter disaggregate ",
 system(jitter_query)
 
 sao_miguel_disaggregated_sample = st_read("./sao-miguel-disaggregated.geojson") %>%
-  sample_n(10000) %>%
-  st_write("scenario.geojson")
+  filter(mode != "other") %>%
+  sample_n(1000)
+
+
+scenario = ab_json(sao_miguel_disaggregated_sample,
+                   mode_column = mode,
+                   scenario_name = "Sample")
+
+ab_save(scenario, "test.json")
