@@ -182,9 +182,15 @@ rnet_brks = c(0, 100, 500, 1000, 5000, 10000, 20000)       # keep consistent wit
 
 rnet_base_cycle = overline(routes_fast_base_fixed, "bike")
 
+sp_bounds = geobr::read_municipality(code_muni = 3550308) %>%
+  st_transform(crs = 4326)
+
 rnet_base_cycle %>%
   tm_shape() +
-  tm_lines("bike", palette = "-viridis", breaks = rnet_brks)
+  tm_lines("bike", palette = "-viridis", breaks = rnet_brks) +
+  tm_shape(sp_bounds) +
+  tm_borders(col="red")
+
 
 routes_fast_active$geo_type = st_geometry_type(routes_fast_active$geometry)
 
@@ -201,7 +207,10 @@ rnet_active_cycle = overline(routes_fast_active_fixed, "bike")
 
 rnet_active_cycle %>%
   tm_shape() +
-  tm_lines("bike", palette = "-viridis", breaks = rnet_brks)
+  tm_lines("bike", palette = "-viridis", breaks = rnet_brks) +
+  tm_shape(sp_bounds) +
+  tm_borders(col="red")
+
 
 g1 + g2
 
