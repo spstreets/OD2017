@@ -255,8 +255,8 @@ trips_inside_area = OD_2017_v1 %>%
 
 # ------------------------------------------------------------------------------
 
-OD_2017_v1 %>%
-  select(zona_o, zona_d, modoprin, fe_via) %>%
+od_sao_miguel_exp = OD_2017_v1 %>%
+  select(zona_o, zona_d, fe_via, modoprin, h_saida, min_saida) %>%
   filter( (zona_o %in% unique(zonas_od_area$NumeroZona) | zona_d %in% (unique(zonas_od_area$NumeroZona))) & !is.na(modoprin)) %>%
   mutate(
     mode_ab_streets = case_when(
@@ -265,38 +265,43 @@ OD_2017_v1 %>%
       modoprin == 9 | modoprin == 10 ~ "Drive",
       modoprin %in% c(7, 8, 11, 12, 13, 14, 17) ~ "other",
       modoprin == 15 ~ "Bike"
-    )
+    ),
+    departure = (h_saida + min_saida/60)*60^2,      # in seconds, for A/B Street
+    trips = round(fe_via)
   ) %>%
-  group_by(zona_o, zona_d, mode_ab_streets) %>%
-  summarise(trips = round(sum(fe_via))) %>%          # round to avoid decimals (sampling weights here...)
-  ungroup() %>%
-  pivot_wider(names_from = mode_ab_streets,
-              values_from = trips) %>%
-  replace(is.na(.), 0) %>%
-  write_csv("./od_sao_miguel.csv")
+  uncount(trips) %>%
+  select(-fe_via, -modoprin, -h_saida, -min_saida)
+
+od_sao_miguel_exp$departure = od_sao_miguel_exp$departure + rnorm(nrow(od_sao_miguel_exp),
+                                                                       mean = 0,
+                                                                       sd = 1800)    #  half hour
+
+od_sao_miguel_exp$all = 1                   # I need this (fake) column to use odjitter
+
+write_csv(od_sao_miguel_exp, "./od_sao_miguel.csv")
 
 st_write(zonas_od %>% mutate(NumeroZona = as.character(NumeroZona)) %>% st_transform(crs = 4326),
          "zonas_od.geojson",
          append=FALSE)
 
-jitter_query = paste0("odjitter disaggregate ",
+jitter_query = paste0("odjitter jitter ",
                       "--od-csv-path ./od_sao_miguel.csv ",
                       "--origin-key zona_o ",
                       "--destination-key zona_d ",
                       "--zones-path ./zonas_od.geojson ",
                       "--zone-name-key NumeroZona ",
-                      "--output-path ./sao-miguel-disaggregated.geojson "
+                      "--disaggregation-threshold 50000 ",
+                      "--output-path ./sao-miguel-jittered.geojson "
                       )
 
 system(jitter_query)
 
-sao_miguel_disaggregated_sample = st_read("./sao-miguel-disaggregated.geojson") %>%
-  filter(mode != "other") %>%
-  sample_n(1000)
-
+sao_miguel_disaggregated_sample = st_read("./sao-miguel-jittered.geojson") %>%
+  filter(mode_ab_streets != "other") %>%
+  sample_n(10000)
 
 scenario = ab_json(sao_miguel_disaggregated_sample,
-                   mode_column = mode,
+                   mode_column = "mode_ab_streets",
                    scenario_name = "Sample")
 
 ab_save(scenario, "test.json")
