@@ -8,25 +8,15 @@ library(pct)
 library(patchwork)
 
 OD_2017_v1 = readRDS("./OD_2017_v1.Rds")
-centro_expandido = st_read("./centro_expandido.geojson")
 zonas_od = readRDS("./zonas_od.Rds")
 
-zonas_od_centro = zonas_od %>%          # sf_use_s2(FALSE)
-  st_centroid() %>%
-  st_transform(crs = "WGS84") %>%
-  mutate(dentro_centro = st_within(.,
-                                   centro_expandido,
-                                   sparse=FALSE)
-  ) %>%
-  filter(dentro_centro == TRUE)
-
-viagens_centro = OD_2017_v1 %>%
-  select(zona_o, zona_d, modoprin, fe_via) %>%
+viagens_sp = OD_2017_v1 %>%
   filter(
     (!is.na(modoprin)) &
-    (zona_o %in% unique(zonas_od_centro$NumeroZona)) &
-    (zona_d %in% unique(zonas_od_centro$NumeroZona))
-    ) %>%
+      (muni_o == 36) &
+      (muni_d == 36)
+  ) %>%
+  select(zona_o, zona_d, modoprin, fe_via) %>%
   mutate(
     mode_ab_streets = case_when(
       modoprin %in% 1:6 ~ "public",
@@ -43,27 +33,25 @@ viagens_centro = OD_2017_v1 %>%
               values_from = trips) %>%
   replace(is.na(.), 0) %>%
   mutate(all = public + foot + car + other + bike) %>%
-  rename(geo_code1 = zona_o,
-         geo_code2 = zona_d) %>%
-  mutate(geo_code1 = as.character(geo_code1),
-         geo_code2 = as.character(geo_code2)
+  mutate(geo_code1 = as.character(zona_o),
+         geo_code2 = as.character(zona_d)
          )
 
-zonas_od_centro = zonas_od %>%
-  filter(NumeroZona %in% unique(zonas_od_centro$NumeroZona)) %>%
+zonas_od_sp = zonas_od %>%
+  filter(NomeMunici == "São Paulo") %>%
   st_transform("WGS84") %>%
-  rename(InterZone = NumeroZona) %>%
-  mutate(InterZone = as.character(InterZone))
+  mutate(InterZone = as.character(NumeroZona))
 
-write_csv(viagens_centro, "./od_sp_center.csv")
-st_write(zonas_od_centro, "./zones_sp_center.geojson", append = FALSE)
+write_csv(viagens_sp, "./od_sp.csv")
+st_write(zonas_od_sp, "./zones_sp.geojson", append = FALSE)
 
-system("odjitter --od-csv-path ./od_sp_center.csv --zones-path ./zones_sp_center.geojson --max-per-od 50000 --output-path result.geojson")
+# old version of odjitter (?)
+system("odjitter --od-csv-path ./od_sp.csv --zones-path ./zones_sp.geojson --max-per-od 500000 --output-path trips_sp_jittered.geojson")
 
 # TODO: sample from the road network, e.g. with:
 # system("odjitter --od-csv-path ./od_sp_center.csv --zones-path ./zones_sp_center.geojson --subpoints-path osm_network.geojson --max-per-od 50000 --output-path result.geojson")
 
-od_jittered = sf::read_sf("result.geojson")
+od_jittered = sf::read_sf("trips_sp_jittered.geojson")
 od_jittered %>%
   top_n(1000, all) %>%
   qtm()
@@ -75,7 +63,7 @@ od_jittered %>%
 # #   <simpleError in stats::filter(x, rep(1/n, n), sides = 2): 'filter' is longer than time series>
 # piggyback::pb_upload("routes_fast.geojson")
 # piggyback::pb_download_url("routes_fast.geojson")
-routes_fast = sf::read_sf("routes_fast.geojson")
+routes_fast = sf::read_sf("routes_sp_city.gpkg")
 names(routes_fast)
 
 # routes_car = route(l = od_jittered,
@@ -87,8 +75,8 @@ names(routes_fast)
 # write_sf(routes_car, "routes_car_center.geojson")
 # piggyback::pb_upload("routes_car_center.geojson")
 # piggyback::pb_download("routes_car_center.geojson")
-routes_car = sf::read_sf("routes_car_center.geojson")
-names(routes_car)
+# routes_car = sf::read_sf("routes_car_center.geojson")
+# names(routes_car)
 
 # After that: group the routes by unique origin and destination and calculate the scenarios, e.g.
 # building on this:
@@ -99,8 +87,19 @@ routes_fast_base = routes_fast %>%
   mutate(
     rf_dist_km = length / 1000,
     rf_avslope_perc = mean(gradient_smooth),
-    dist_bands = cut(x = rf_dist_km, breaks = c(0, 1, 3, 6, 10, 15, 20, 30, 1000), include.lowest = TRUE)
-  )
+    dist_bands = cut(x = rf_dist_km, breaks = c(0, 1, 3, 6, 10, 15, 20, 30, 60), include.lowest = TRUE)
+  ) %>%
+  summarise(geometry = st_union(geom),
+            all = first(all),
+            car = first(car),
+            bike = first(bike),
+            foot = first(foot),
+            public = first(public),
+            other = first(other),
+            rf_dist_km = first(rf_dist_km),
+            rf_avslope_perc = first(rf_avslope_perc),
+            dist_bands = first(dist_bands)
+            )
 
 routes_fast_active = routes_fast_base %>%
   mutate(
@@ -134,9 +133,18 @@ base_results = routes_fast_base %>%
   mutate(mode = factor(mode, levels = c("car", "other", "public", "bike", "foot"), ordered = TRUE)) %>%
   group_by(dist_bands, mode) %>%
   summarise(Trips = sum(value))
+
 g1 = ggplot(base_results) +
   geom_col(aes(dist_bands, Trips, fill = mode)) +
-  scale_fill_manual(values = col_modes) + ylab("Trips")
+  ggtitle("Cenário base") +
+  xlab("Distância (km)") +
+  scale_y_continuous(name = "Milhares de viagens / dia",
+                     labels=function(x) format(x/1000,
+                                               big.mark = ",",
+                                               decimal.mark = ".",
+                                               scientific = FALSE)) +
+  scale_fill_manual(values = col_modes, name = "Modo") +
+  theme_bw()
 g1
 
 active_results = routes_fast_active %>%
@@ -146,25 +154,63 @@ active_results = routes_fast_active %>%
   mutate(mode = factor(mode, levels = c("car", "other", "public", "bike", "foot"), ordered = TRUE)) %>%
   group_by(dist_bands, mode) %>%
   summarise(Trips = sum(value))
+
 g2 = ggplot(active_results) +
   geom_col(aes(dist_bands, Trips, fill = mode)) +
-  scale_fill_manual(values = col_modes) + ylab("Trips")
+  ggtitle(expression(paste("Cenário ", italic("Go Active")))) +
+  xlab("Distância (km)") +
+  scale_y_continuous(name = "Milhares de viagens / dia",
+                     labels=function(x) format(x/1000,
+                                               big.mark = ",",
+                                               decimal.mark = ".",
+                                               scientific = FALSE)) +
+  scale_fill_manual(values = col_modes, name = "Modo") +
+  theme_bw()
 g2
 
-rnet_brks = c(0, 10, 100, 500, 1000, 5000, 12000)       # keep consistent with the active scenario
-rnet_base_cycle = overline(routes_fast_base, "bike")
-rnet_base_cycle %>%
-  top_n(10000, bike) %>%
-  tm_shape() +
-  tm_lines("bike", palette = "-viridis", breaks = rnet_brks)
+routes_fast_base$geo_type = st_geometry_type(routes_fast_base$geometry)
 
-rnet_active_cycle = overline(routes_fast_active, "bike")
-rnet_active_cycle %>%
-  top_n(10000, bike) %>%
+routes_fast_base1 = routes_fast_base %>%
+  filter(geo_type == "MULTILINESTRING") %>%
+  st_cast("LINESTRING")                       # repeats the multilinestrings in several single linestrings if the df has only multilnestrings
+
+routes_fast_base2 = routes_fast_base %>%
+  filter(geo_type == "LINESTRING")
+
+routes_fast_base_fixed = rbind(routes_fast_base1, routes_fast_base2)
+
+rnet_brks = c(0, 100, 500, 1000, 5000, 10000, 20000)       # keep consistent with the active scenario
+
+rnet_base_cycle = overline(routes_fast_base_fixed, "bike")
+
+sp_bounds = geobr::read_municipality(code_muni = 3550308) %>%
+  st_transform(crs = 4326)
+
+rnet_base_cycle %>%
   tm_shape() +
-  tm_lines("bike", palette = "-viridis", breaks = rnet_brks)
+  tm_lines("bike", palette = "-viridis", breaks = rnet_brks) +
+  tm_shape(sp_bounds) +
+  tm_borders(col="red")
+
+
+routes_fast_active$geo_type = st_geometry_type(routes_fast_active$geometry)
+
+routes_fast_active1 = routes_fast_active %>%
+  filter(geo_type == "MULTILINESTRING") %>%
+  st_cast("LINESTRING")                       # repeats the multilinestrings in several single linestrings if the df has only multilnestrings
+
+routes_fast_active2 = routes_fast_active %>%
+  filter(geo_type == "LINESTRING")
+
+routes_fast_active_fixed = rbind(routes_fast_active1, routes_fast_active2)
+
+rnet_active_cycle = overline(routes_fast_active_fixed, "bike")
+
+rnet_active_cycle %>%
+  tm_shape() +
+  tm_lines("bike", palette = "-viridis", breaks = rnet_brks) +
+  tm_shape(sp_bounds) +
+  tm_borders(col="red")
+
 
 g1 + g2
-# After that: group the routes by unique origin and destination and calculate the scenarios, e.g.
-# building on this:
-#   https://github.com/ITSLeeds/pct/blob/1bc8b202b2fc9d1436b973bf97523777adca9523/data-raw/training-dec-2021.Rmd#L471
