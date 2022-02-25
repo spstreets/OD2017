@@ -133,6 +133,8 @@ Now the mode share by distance (using the first recategorisation). The average t
 
 ```{r, echo=FALSE}
 
+col_modes = c("#fe5f55", "grey", "#ffd166", "#457b9d")
+
 OD_2017_v1 %>%
   filter(!is.na(modoprin)) %>%
   mutate(
@@ -144,6 +146,12 @@ OD_2017_v1 %>%
   select(dist_bands, modo_simples, fe_via) %>%
   group_by(dist_bands, modo_simples) %>%
   summarise(Trips = sum(fe_via)) %>%
+  mutate(modo_simples = factor(modo_simples, levels = c("Individual motorizado",
+                                                        "Outro",
+                                                        "Público",
+                                                        "Ativo")
+                               )
+         ) %>%
   ggplot(aes(x = dist_bands, y = Trips, fill = modo_simples)) +
   geom_col() +
   xlab("Distância (km)") +
@@ -152,13 +160,15 @@ OD_2017_v1 %>%
                                                big.mark = ",",
                                                decimal.mark = ".",
                                                scientific = FALSE)) +
-  scale_fill_brewer(palette = "Set1", name = "Modo") +
+  scale_fill_manual(values = col_modes, name = "Modo") +
   theme_bw()
 
 ```
 
 
 ```{r, echo=FALSE}
+
+col_modes = c("#fe5f55", "grey", "#ffd166", "#90be6d", "#457b9d")
 
 OD_2017_v1 %>%
   filter(!is.na(modoprin)) %>%
@@ -171,6 +181,13 @@ OD_2017_v1 %>%
   select(dist_bands, mode_ab_streets, fe_via) %>%
   group_by(dist_bands, mode_ab_streets) %>%
   summarise(Trips = sum(fe_via)) %>%
+  mutate(mode_ab_streets = factor(mode_ab_streets, levels = c("Carro",
+                                                              "Outro",
+                                                              "Transporte público",
+                                                              "Bicicleta",
+                                                              "A pé")
+                                  )
+         ) %>%
   ggplot(aes(x = dist_bands, y = Trips, fill = mode_ab_streets)) +
   geom_col() +
   ggtitle("Classificação A/B Streets") +
@@ -180,7 +197,7 @@ OD_2017_v1 %>%
                                                big.mark = ",",
                                                decimal.mark = ".",
                                                scientific = FALSE)) +
-  scale_fill_brewer(palette = "Set1", name = "Modo") +
+  scale_fill_manual(values = col_modes, name = "Modo") +
   theme_bw()
 
 ```
