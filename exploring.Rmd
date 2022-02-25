@@ -24,7 +24,7 @@ library(osrm)
 # folder = "~/Dropbox/DATA/"
 # folder = "~/hd/data/project-data/spshared/"
 
-pb_download(repo = "spstreets/OD2017")
+# pb_download(repo = "spstreets/OD2017")
 
 # folder = "~/hd/data/project-data/spshared/"
 # load(file.path(folder, "OD2017.rda"))
@@ -360,7 +360,8 @@ OD = OD_2017_v1 %>%
       h_saida >= 0 & h_saida < 10 ~ "Manhã",
       h_saida >= 10 & h_saida < 15 ~ "Tarde",
       h_saida >=15 & h_saida <= 23 ~ "Noite"
-    )
+    ),
+    across(time, factor, levels=c("Manhã","Tarde","Noite"))
          ) %>%
   select(zona_o, zona_d, time, public, car, motorcycle, bike, foot, other) %>%
   group_by(zona_o, zona_d, time) %>%
