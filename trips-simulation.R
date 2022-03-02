@@ -4,11 +4,28 @@ library(stplanr)
 library(tmap)
 tmap_mode("view") # interactive maps
 # piggyback::pb_download() # download data files
+remotes::install_github("atumworld/odrust")
+# remotes::install_github("dabreegster/odjitter", subdir = "R")
 library(pct)
 library(patchwork)
+sf::sf_use_s2(FALSE)
 
+# Read-in data ------------------------------------------------------------
 OD_2017_v1 = readRDS("./OD_2017_v1.Rds")
 zonas_od = readRDS("./zonas_od.Rds")
+sp_boundary = zonas_od %>%
+  sf::st_buffer(10) %>%
+  sf::st_simplify() %>%
+  sf::st_transform(4326) %>%
+  sf::st_union()
+# Download Brazil's road network, ~6m rows
+# osm_network = osmextract::oe_get_network(place = "brazil", mode = "driving")
+# Import with spatial filter (not tested)
+# osm_network = osmextract::oe_get_network(place = "brazil", mode = "driving", boundary = sp_boundary)
+# osm_sp = osm_network[st_transform(zonas_od, 4326), ] # solved with sp_boundary
+# saveRDS(osm_sp, "osm_sp.Rds")
+# piggyback::pb_upload("osm_sp.Rds")
+osm_sp = readRDS("osm_sp.Rds")
 
 viagens_sp = OD_2017_v1 %>%
   filter(
@@ -41,21 +58,27 @@ zonas_od_sp = zonas_od %>%
   filter(NomeMunici == "São Paulo") %>%
   st_transform("WGS84") %>%
   mutate(InterZone = as.character(NumeroZona))
+zonas_od_to_jitter = zonas_od_sp %>%
+  mutate(NumeroZona = as.character(NumeroZona))
 
-write_csv(viagens_sp, "./od_sp.csv")
-st_write(zonas_od_sp, "./zones_sp.geojson", append = FALSE)
+# Sanity check desire lines data
+summary(viagens_sp$all)
+viagens_top = viagens_sp %>%
+  filter(all > 10000)
+viagens_top_sf = od::od_to_sf(viagens_top, zonas_od_to_jitter)
+qtm(viagens_top_sf)
 
-# old version of odjitter (?)
-system("odjitter --od-csv-path ./od_sp.csv --zones-path ./zones_sp.geojson --max-per-od 500000 --output-path trips_sp_jittered.geojson")
+set.seed(42)
+od_jittered = odrust::odr_jitter(
+  od = viagens_sp, zones = zonas_od_to_jitter, subpoints = osm_sp,
+  disaggregation_threshold = 500, min_distance_meters = 100) # todo: try different thresholds
+plot(od_jittered$geometry, lwd = 0.01)
 
-# TODO: sample from the road network, e.g. with:
-# system("odjitter --od-csv-path ./od_sp_center.csv --zones-path ./zones_sp_center.geojson --subpoints-path osm_network.geojson --max-per-od 50000 --output-path result.geojson")
-
-od_jittered = sf::read_sf("trips_sp_jittered.geojson")
 od_jittered %>%
   top_n(1000, all) %>%
   qtm()
 
+# Todo: update the routing... (for the subregion?)
 # routes_fast = route(l = od_jittered, route_fun = cyclestreets::journey)
 #
 # # These routes failed: 1, 274, 424, 577, 609, 787, 943, 1197, 1285, 1349, 1385, 2025, 2092, 2230, 2336, 2356, 2369, 2371, 2485, 2490, 2571, 2811, 3009, 3281, 3285, 3314, 3436, 3446, 3639, 3683, 3809, 3977, 4032, 4063, 4111, 4672, 4723, 4727, 4729, 4835, 4842, 4872, 4920, 4937, 4965, 4966, 4975, 5059, 5167, 5234, 5589, 5595, 5629, 5651, 5754, 5841, 5914, 5976, 5978, 5983, 5984, 6022, 6247, 6328, 6497, 6499, 6518, 6818, 6925, 6938
@@ -63,6 +86,7 @@ od_jittered %>%
 # #   <simpleError in stats::filter(x, rep(1/n, n), sides = 2): 'filter' is longer than time series>
 # piggyback::pb_upload("routes_fast.geojson")
 # piggyback::pb_download_url("routes_fast.geojson")
+piggyback::pb_download("routes_sp_city.gpkg")
 routes_fast = sf::read_sf("routes_sp_city.gpkg")
 names(routes_fast)
 
