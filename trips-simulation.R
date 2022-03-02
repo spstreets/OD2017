@@ -113,11 +113,12 @@ routes_fast_base = routes_fast %>%
     rf_avslope_perc = mean(gradient_smooth),
     dist_bands = cut(x = rf_dist_km, breaks = c(0, 1, 3, 6, 10, 15, 20, 30, 60), include.lowest = TRUE)
   ) %>%
-  summarise(geometry = st_union(geom),
-            all = first(all),
+  sf::st_drop_geometry() %>%
+  summarise(all = first(all),
             car = first(car),
             bike = first(bike),
             foot = first(foot),
+            `Percent walk` = foot / all,
             public = first(public),
             other = first(other),
             rf_dist_km = first(rf_dist_km),
@@ -125,15 +126,50 @@ routes_fast_base = routes_fast %>%
             dist_bands = first(dist_bands)
             )
 
+# sanity checks
+nrow(routes_fast_base)
+summary(routes_fast_base$geo_code1 == routes_fast_base$geo_code2)
+sum(routes_fast_base$foot) / sum(routes_fast_base$all)
+g1 = routes_fast_base %>%
+  ggplot(aes(rf_dist_km, `Percent walk`, size = all)) +
+  geom_point(show.legend = FALSE) +
+  geom_smooth(method = lm, se = FALSE, show.legend = FALSE) +
+  xlim(c(0, 5)) +
+  xlab("Distance (km)") +
+  scale_y_continuous(labels = scales::percent)
+g1
+m1 = lm(`Percent walk` ~ rf_dist_km, data = routes_fast_base)
+resids = m1$residuals + 1
+
+routes_fast_base_high_walk = routes_fast_base %>%
+  ungroup() %>%
+  sample_n(size = 10000, weight = resids)
+m2 = lm(`Percent walk` ~ rf_dist_km, data = routes_fast_base_high_walk)
+sum(routes_fast_base_high_walk$foot) / sum(routes_fast_base_high_walk$all)
+
+g2 = routes_fast_base_high_walk %>%
+  ggplot(aes(rf_dist_km, `Percent walk`, size = all)) +
+  geom_point(show.legend = FALSE) +
+  geom_smooth(method = lm, se = FALSE, show.legend = FALSE) +
+  # geom_smooth(method = lm, formula = y ~ splines::bs(x, 2), se = FALSE) +
+  xlim(c(0, 5)) +
+  xlab("Distance (km)") +
+  scale_y_continuous(labels = scales::percent)
+
+g1 + g2
+
 routes_fast_active = routes_fast_base %>%
   mutate(
-    foot_increase_proportion = case_when(
-      # specifies that 50% of car journeys <1km in length will be replaced with walking
-      rf_dist_km < 1 ~ 0.5,
-      # specifies that 10% of car journeys 1-2km in length will be replaced with walking
-      rf_dist_km >= 1 & rf_dist_km < 2 ~ 0.1,
-      TRUE ~ 0
-    ),
+    # Simplistic 'actdev' way of calculating walking uptake
+    # foot_increase_proportion = case_when(
+    #   # specifies that 50% of car journeys <1km in length will be replaced with walking
+    #   rf_dist_km < 1 ~ 0.5,
+    #   # specifies that 10% of car journeys 1-2km in length will be replaced with walking
+    #   rf_dist_km >= 1 & rf_dist_km < 2 ~ 0.1,
+    #   TRUE ~ 0
+    # ),
+    lm_foot_proportion = m2$coefficients[[1]] + m2$coefficients[[2]] * rf_dist_km,
+    foot_increase_proportion = case_when(lm_foot_proportion < foot / all ~ foot / all, TRUE ~ lm_foot_proportion),
     # Specify the Go Dutch scenario we will use to replace remaining car trips with cycling
     bike_increase_proportion = uptake_pct_godutch_2020(
       distance = rf_dist_km,
@@ -145,13 +181,26 @@ routes_fast_active = routes_fast_base %>%
     foot = foot + car_reduction,
     car_reduction = car * bike_increase_proportion,
     car = car - car_reduction,
-    bike = bike + car_reduction
+    bike = bike + car_reduction,
+    `Percent walk` = foot / all
   )
+
+sum(routes_fast_active$foot) / sum(routes_fast_active$all)
+0.3744745 - 0.3140297
+
+g3 = routes_fast_active %>%
+  ggplot(aes(rf_dist_km, `Percent walk`, size = all)) +
+  geom_point(show.legend = FALSE) +
+  geom_smooth(method = lm, se = FALSE, show.legend = FALSE) +
+  xlim(c(0, 5)) +
+  xlab("Distance (km)") +
+  scale_y_continuous(labels = scales::percent)
+
+g1 + g2 + g3
 
 col_modes = c("#fe5f55", "grey", "#ffd166", "#90be6d", "#457b9d")
 # Plot bar chart showing modal share by distance band for existing journeys
 base_results = routes_fast_base %>%
-  sf::st_drop_geometry() %>%
   dplyr::select(dist_bands, car, other, public, bike, foot) %>%
   tidyr::pivot_longer(cols = matches("car|other|publ|bike|foot"), names_to = "mode") %>%
   mutate(mode = factor(mode, levels = c("car", "other", "public", "bike", "foot"), ordered = TRUE)) %>%
@@ -172,7 +221,6 @@ g1 = ggplot(base_results) +
 g1
 
 active_results = routes_fast_active %>%
-  sf::st_drop_geometry() %>%
   dplyr::select(dist_bands, car, other, public, bike, foot) %>%
   tidyr::pivot_longer(cols = matches("car|other|publ|bike|foot"), names_to = "mode") %>%
   mutate(mode = factor(mode, levels = c("car", "other", "public", "bike", "foot"), ordered = TRUE)) %>%
@@ -190,7 +238,7 @@ g2 = ggplot(active_results) +
                                                scientific = FALSE)) +
   scale_fill_manual(values = col_modes, name = "Modo") +
   theme_bw()
-g2
+g1 + g2
 
 routes_fast_base$geo_type = st_geometry_type(routes_fast_base$geometry)
 
