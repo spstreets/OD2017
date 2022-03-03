@@ -30,7 +30,7 @@ sp_boundary = st_read("./SIRGAS_GPKG_subprefeitura.gpkg") %>%
 osm_sp = readRDS("osm_sp.Rds")
 
 sf::sf_use_s2(TRUE)
-zona_leste = st_read("/home/lucas/Downloads/SIRGAS_GPKG_subprefeitura.gpkg") %>%
+zona_leste = st_read("./SIRGAS_GPKG_subprefeitura.gpkg") %>%
   st_transform(crs = 4326) %>%
   filter(sp_nome %in% c("PENHA", "ERMELINO MATARAZZO", "SAO MIGUEL", "ITAIM PAULISTA",
                         "GUAIANASES", "ITAQUERA", "CIDADE TIRADENTES", "SAO MATEUS",
