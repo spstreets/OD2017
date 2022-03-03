@@ -10,14 +10,16 @@ library(pct)
 library(patchwork)
 sf::sf_use_s2(FALSE)
 
+# piggyback::pb_download("./SIRGAS_GPKG_subprefeitura.gpkg")
+
 # Read-in data ------------------------------------------------------------
 OD_2017_v1 = readRDS("./OD_2017_v1.Rds")
 zonas_od = readRDS("./zonas_od.Rds")
-sp_boundary = zonas_od %>%
-  sf::st_buffer(10) %>%
+sp_boundary = st_read("./SIRGAS_GPKG_subprefeitura.gpkg") %>%
+  sf::st_buffer(1) %>%
   sf::st_simplify() %>%
-  sf::st_transform(4326) %>%
-  sf::st_union()
+  sf::st_union() %>%
+  sf::st_transform(4326)
 # Download Brazil's road network, ~6m rows
 # osm_network = osmextract::oe_get_network(place = "brazil", mode = "driving")
 # Import with spatial filter (not tested)
@@ -27,11 +29,29 @@ sp_boundary = zonas_od %>%
 # piggyback::pb_upload("osm_sp.Rds")
 osm_sp = readRDS("osm_sp.Rds")
 
-viagens_sp = OD_2017_v1 %>%
+sf::sf_use_s2(TRUE)
+zona_leste = st_read("/home/lucas/Downloads/SIRGAS_GPKG_subprefeitura.gpkg") %>%
+  st_transform(crs = 4326) %>%
+  filter(sp_nome %in% c("PENHA", "ERMELINO MATARAZZO", "SAO MIGUEL", "ITAIM PAULISTA",
+                        "GUAIANASES", "ITAQUERA", "CIDADE TIRADENTES", "SAO MATEUS",
+                        "ARICANDUVA-FORMOSA-CARRAO", "MOOCA", "SAPOPEMBA", "IPIRANGA",
+                        "VILA PRUDENTE")
+         ) %>%
+  st_buffer(1) %>%
+  st_simplify() %>%
+  st_union()
+
+zonas_od_leste = zonas_od %>%
+  st_centroid() %>%
+  st_transform(4326) %>%
+  st_filter(y = zona_leste, .predicate = st_covered_by)
+
+
+viagens_zl = OD_2017_v1 %>%
   filter(
     (!is.na(modoprin)) &
-      (muni_o == 36) &
-      (muni_d == 36)
+      (zona_o %in% zonas_od_leste$NumeroZona) &
+      (zona_d %in% zonas_od_leste$NumeroZona)
   ) %>%
   select(zona_o, zona_d, modoprin, fe_via) %>%
   mutate(
@@ -54,25 +74,26 @@ viagens_sp = OD_2017_v1 %>%
          geo_code2 = as.character(zona_d)
          )
 
-zonas_od_sp = zonas_od %>%
-  filter(NomeMunici == "São Paulo") %>%
-  st_transform("WGS84") %>%
+zonas_od_zl = zonas_od %>%
+  filter(NumeroZona %in% zonas_od_leste$NumeroZona) %>%
+  st_transform(4326) %>%
   mutate(InterZone = as.character(NumeroZona))
-zonas_od_to_jitter = zonas_od_sp %>%
+zonas_od_to_jitter = zonas_od_zl %>%
   mutate(NumeroZona = as.character(NumeroZona))
 
+sf_use_s2(FALSE)
 # Sanity check desire lines data
-summary(viagens_sp$all)
-viagens_top = viagens_sp %>%
+summary(viagens_zl$all)
+viagens_top = viagens_zl %>%
   filter(all > 10000)
 viagens_top_sf = od::od_to_sf(viagens_top, zonas_od_to_jitter)
 qtm(viagens_top_sf)
 
 set.seed(42)
 od_jittered = odrust::odr_jitter(
-  od = viagens_sp, zones = zonas_od_to_jitter, subpoints = osm_sp,
+  od = viagens_zl, zones = zonas_od_to_jitter, subpoints = osm_sp,
   disaggregation_threshold = 500, min_distance_meters = 100) # todo: try different thresholds
-plot(od_jittered$geometry, lwd = 0.01)
+plot(od_jittered$geometry, lwd = 0.1)
 
 od_jittered %>%
   top_n(1000, all) %>%
