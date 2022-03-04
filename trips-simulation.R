@@ -41,6 +41,18 @@ zona_leste = st_read("./SIRGAS_GPKG_subprefeitura.gpkg") %>%
   st_simplify() %>%
   st_union()
 
+# How do I add legends here??
+tmap_mode("plot")
+tm_shape(zonas_od) +
+  tm_borders(col = "grey", alpha = .5) +
+  tm_shape(sp_boundary) +
+  tm_borders(col = "black") +
+  tm_shape(zona_leste) +
+  tm_fill(col="red", alpha=.5, title = "Zona Leste") +
+  tm_layout(frame = FALSE)
+
+tmap_mode("view")
+
 zonas_od_leste = zonas_od %>%
   st_centroid() %>%
   st_transform(4326) %>%
