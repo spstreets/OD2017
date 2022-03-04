@@ -694,7 +694,7 @@ Bike trips:
 
 ```{r, echo=FALSE}
 
-desire_lines_bike = od2line(bike_pairs, zonas_od)
+desire_lines_bike = od_jitter(bike_pairs, zonas_od)
 
 tm_shape(desire_lines_bike) +
   tm_lines(palette = "plasma",
@@ -715,7 +715,7 @@ Foot trips:
 
 ```{r, echo=FALSE}
 
-desire_lines_foot = od2line(foot_pairs, zonas_od)
+desire_lines_foot = od_jitter(foot_pairs, zonas_od)
 
 tm_shape(desire_lines_foot) +
   tm_lines(palette = "plasma",
@@ -736,7 +736,7 @@ Car trips, still too many lines (10,000) to account for >92% of total car trips.
 
 ```{r, echo=FALSE}
 
-desire_lines_car = od2line(car_pairs, zonas_od)
+desire_lines_car = od_jitter(car_pairs, zonas_od)
 
 tm_shape(desire_lines_car) +
   tm_lines(palette = "plasma",
