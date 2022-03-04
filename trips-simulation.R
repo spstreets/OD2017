@@ -99,40 +99,20 @@ od_jittered %>%
   top_n(1000, all) %>%
   qtm()
 
-# Todo: update the routing... (for the subregion?)
 # routes_fast = route(l = od_jittered, route_fun = cyclestreets::journey)
 #
-# # These routes failed: 1, 274, 424, 577, 609, 787, 943, 1197, 1285, 1349, 1385, 2025, 2092, 2230, 2336, 2356, 2369, 2371, 2485, 2490, 2571, 2811, 3009, 3281, 3285, 3314, 3436, 3446, 3639, 3683, 3809, 3977, 4032, 4063, 4111, 4672, 4723, 4727, 4729, 4835, 4842, 4872, 4920, 4937, 4965, 4966, 4975, 5059, 5167, 5234, 5589, 5595, 5629, 5651, 5754, 5841, 5914, 5976, 5978, 5983, 5984, 6022, 6247, 6328, 6497, 6499, 6518, 6818, 6925, 6938
-# # The first of which was:
-# #   <simpleError in stats::filter(x, rep(1/n, n), sides = 2): 'filter' is longer than time series>
-# piggyback::pb_upload("routes_fast.geojson")
-# piggyback::pb_download_url("routes_fast.geojson")
-piggyback::pb_download("routes_sp_city.gpkg")
-routes_fast = sf::read_sf("routes_sp_city.gpkg")
+# piggyback::pb_download("routes_zl.gpkg")
+routes_fast = sf::read_sf("routes_zl.gpkg")
 names(routes_fast)
 
-# routes_car = route(l = od_jittered,
-#                    route_fun = route_osrm,
-#                    osrm.profile = "car")
-# # These routes failed: 514, 2438, 5720, 6259
-# # The first of which was:
-# #  <simpleError in open.connection(con, "rb"): cannot open the connection to 'https://routing.openstreetmap.de/routed-car/route/v1/driving/-46.6348553708288,-23.5349495769585;-46.6259491874601,-23.5402833338891?alternatives=false&geometries=geojson&steps=false&overview=full'>
-# write_sf(routes_car, "routes_car_center.geojson")
-# piggyback::pb_upload("routes_car_center.geojson")
-# piggyback::pb_download("routes_car_center.geojson")
-# routes_car = sf::read_sf("routes_car_center.geojson")
-# names(routes_car)
-
-# After that: group the routes by unique origin and destination and calculate the scenarios, e.g.
-# building on this:
-#   https://github.com/ITSLeeds/pct/blob/1bc8b202b2fc9d1436b973bf97523777adca9523/data-raw/training-dec-2021.Rmd#L471
-
 routes_fast_base = routes_fast %>%
-  group_by(geo_code1, geo_code2) %>%
+  group_by(zona_o, zona_d, route_number) %>%
   mutate(
     rf_dist_km = length / 1000,
     rf_avslope_perc = mean(gradient_smooth),
-    dist_bands = cut(x = rf_dist_km, breaks = c(0, 1, 3, 6, 10, 15, 20, 30, 60), include.lowest = TRUE)
+    dist_bands = cut(x = rf_dist_km,
+                     breaks = c(0, 1, 3, 6, 10, 15, 20, 30, 60),
+                     include.lowest = TRUE)
   ) %>%
   sf::st_drop_geometry() %>%
   summarise(all = first(all),
@@ -149,33 +129,41 @@ routes_fast_base = routes_fast %>%
 
 # sanity checks
 nrow(routes_fast_base)
-summary(routes_fast_base$geo_code1 == routes_fast_base$geo_code2)
+summary(routes_fast_base$zona_o == routes_fast_base$zona_d)
 sum(routes_fast_base$foot) / sum(routes_fast_base$all)
 g1 = routes_fast_base %>%
-  ggplot(aes(rf_dist_km, `Percent walk`, size = all)) +
+  ggplot(aes(rf_dist_km, `Percent walk`, size = all, alpha = 0.1)) +
   geom_point(show.legend = FALSE) +
   geom_smooth(method = lm, se = FALSE, show.legend = FALSE) +
   xlim(c(0, 5)) +
-  xlab("Distance (km)") +
-  scale_y_continuous(labels = scales::percent)
+  xlab("Distância (km)") +
+  ylab("% de viagens a pé") +
+  ggtitle("Todas as rotas") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw()
 g1
+
 m1 = lm(`Percent walk` ~ rf_dist_km, data = routes_fast_base)
 resids = m1$residuals + 1
 
 routes_fast_base_high_walk = routes_fast_base %>%
   ungroup() %>%
-  sample_n(size = 10000, weight = resids)
+  sample_n(size = 4000, weight = resids)
+
 m2 = lm(`Percent walk` ~ rf_dist_km, data = routes_fast_base_high_walk)
 sum(routes_fast_base_high_walk$foot) / sum(routes_fast_base_high_walk$all)
 
 g2 = routes_fast_base_high_walk %>%
-  ggplot(aes(rf_dist_km, `Percent walk`, size = all)) +
+  ggplot(aes(rf_dist_km, `Percent walk`, size = all, alpha = 0.1)) +
   geom_point(show.legend = FALSE) +
   geom_smooth(method = lm, se = FALSE, show.legend = FALSE) +
   # geom_smooth(method = lm, formula = y ~ splines::bs(x, 2), se = FALSE) +
   xlim(c(0, 5)) +
-  xlab("Distance (km)") +
-  scale_y_continuous(labels = scales::percent)
+  xlab("Distância (km)") +
+  ylab("% de viagens a pé") +
+  ggtitle("Maior propensão a viajar a pé") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw()
 
 g1 + g2
 
@@ -207,15 +195,17 @@ routes_fast_active = routes_fast_base %>%
   )
 
 sum(routes_fast_active$foot) / sum(routes_fast_active$all)
-0.3744745 - 0.3140297
 
 g3 = routes_fast_active %>%
-  ggplot(aes(rf_dist_km, `Percent walk`, size = all)) +
+  ggplot(aes(rf_dist_km, `Percent walk`, size = all, alpha = 0.1)) +
   geom_point(show.legend = FALSE) +
   geom_smooth(method = lm, se = FALSE, show.legend = FALSE) +
   xlim(c(0, 5)) +
-  xlab("Distance (km)") +
-  scale_y_continuous(labels = scales::percent)
+  xlab("Distância (km)") +
+  ylab("% de viagens a pé") +
+  ggtitle("Cenário contrafactual") +
+  scale_y_continuous(labels = scales::percent) +
+  theme_bw()
 
 g1 + g2 + g3
 
@@ -250,7 +240,7 @@ active_results = routes_fast_active %>%
 
 g2 = ggplot(active_results) +
   geom_col(aes(dist_bands, Trips, fill = mode)) +
-  ggtitle(expression(paste("Cenário ", italic("Go Active")))) +
+  ggtitle("Cenário Contrafactual") +
   xlab("Distância (km)") +
   scale_y_continuous(name = "Milhares de viagens / dia",
                      labels=function(x) format(x/1000,
