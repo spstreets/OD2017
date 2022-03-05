@@ -263,49 +263,57 @@ g2 = ggplot(active_results) +
   theme_bw()
 g1 + g2
 
-routes_fast_base$geo_type = st_geometry_type(routes_fast_base$geometry)
 
-routes_fast_base1 = routes_fast_base %>%
-  filter(geo_type == "MULTILINESTRING") %>%
-  st_cast("LINESTRING")                       # repeats the multilinestrings in several single linestrings if the df has only multilnestrings
+# Visualizations at the route level --------------------------------------------
 
-routes_fast_base2 = routes_fast_base %>%
-  filter(geo_type == "LINESTRING")
+base_bike = overline(routes_fast, "bike")
+base_walk = overline(routes_fast, "foot")
 
-routes_fast_base_fixed = rbind(routes_fast_base1, routes_fast_base2)
+sao_miguel = st_read("./sao_miguel_paulista.geojson")
 
-rnet_brks = c(0, 100, 500, 1000, 5000, 10000, 20000)       # keep consistent with the active scenario
+scenario = routes_fast %>%
+  select(zona_o, zona_d, route_number) %>%
+  left_join(routes_fast_active, by=c("zona_o", "zona_d", "route_number"))
 
-rnet_base_cycle = overline(routes_fast_base_fixed, "bike")
+scenario_bike = overline(scenario, "bike")
+scenario_walk = overline(scenario, "foot")
 
-sp_bounds = geobr::read_municipality(code_muni = 3550308) %>%
-  st_transform(crs = 4326)
+bike_brks = c(0, 100, 500, 1000, 5000, 10000, 20000)       # keep consistent with the active scenario
+foot_brks = c(0, 1000, 5000, 10000, 25000, 50000)
 
-rnet_base_cycle %>%
+base_bike %>%
   tm_shape() +
-  tm_lines("bike", palette = "-viridis", breaks = rnet_brks) +
-  tm_shape(sp_bounds) +
-  tm_borders(col="red")
+  tm_lines("bike", palette = "-viridis", breaks = bike_brks) +
+  tm_shape(sp_boundary) +
+  tm_borders(col = "red", alpha = 0.25) +
+  tm_shape(sao_miguel) +
+  tm_borders(col = "red", lty = "dashed")
 
-
-routes_fast_active$geo_type = st_geometry_type(routes_fast_active$geometry)
-
-routes_fast_active1 = routes_fast_active %>%
-  filter(geo_type == "MULTILINESTRING") %>%
-  st_cast("LINESTRING")                       # repeats the multilinestrings in several single linestrings if the df has only multilnestrings
-
-routes_fast_active2 = routes_fast_active %>%
-  filter(geo_type == "LINESTRING")
-
-routes_fast_active_fixed = rbind(routes_fast_active1, routes_fast_active2)
-
-rnet_active_cycle = overline(routes_fast_active_fixed, "bike")
-
-rnet_active_cycle %>%
+scenario_bike %>%
   tm_shape() +
-  tm_lines("bike", palette = "-viridis", breaks = rnet_brks) +
-  tm_shape(sp_bounds) +
-  tm_borders(col="red")
+  tm_lines("bike", palette = "-viridis", breaks = bike_brks) +
+  tm_shape(sp_boundary) +
+  tm_borders(col="red", alpha = 0.25) +
+  tm_shape(sao_miguel) +
+  tm_borders(col = "red", lty = "dashed")
+
+base_walk %>%
+  tm_shape() +
+  tm_lines("foot", palette = "-viridis", breaks = foot_brks) +
+  tm_shape(sp_boundary) +
+  tm_borders(col="red", alpha = 0.25) +
+  tm_shape(sao_miguel) +
+  tm_borders(col = "red", lty = "dashed")
+
+scenario_walk %>%
+  tm_shape() +
+  tm_lines("foot", palette = "-viridis", breaks = foot_brks) +
+  tm_shape(sp_boundary) +
+  tm_borders(col="red", alpha = 0.25) +
+  tm_shape(sao_miguel) +
+  tm_borders(col = "red", lty = "dashed")
+
+# Visualizations at the Zone level ---------------------------------------------
 
 
-g1 + g2
+
