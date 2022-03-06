@@ -38,7 +38,7 @@ I create this separated document to be the main reference on the exploratory dat
 
 The data set contains a lot of socioeconomic variables. Since our interest relies on trips, flows and mode choices, the analyses so far are at the trip level. In this context, the variables that contain a the modes used in each trip are the main ones (`modo1`, `modo2`, `modo3`, and `modo4`). There is also the coordinates for each residence (`co_dom_x` and `co_dom_y`) and workplaces (`co_tr1_x` and `co_tr1_y`), and obviously the origin and destination zones and coordinates (e.g. `zona_o`, `co_o_x`, `co_o_y`) and euclidean distance. As you can see in the graph below, the vast majority of trips are made using just one mode. I use the main mode used in the trip (`modoprin`) in the remaining graphs. 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
 OD_2017_v1 = OD_2017_v1 %>%
   rowwise() %>%
@@ -358,6 +358,8 @@ OD_2017_v1 %>%
 zonas_od = readRDS("zonas_od.Rds")
 tmap_mode("plot")                     # mode = view breaks some plots (why? ask Robin)
 
+
+
 ```
 
 Here I plot the main zones of origin and destination using the total number of trips -- always using the survey's expansion factor. It is interesting to note that there is no centrality pattern when we look at the main Zones of Destination. Maybe we should restrict the analysis to specific types of trips (e.g., commute strictly defined). I checked these results with the official Tables and they are the same in terms of the main zones of origin and destination.
@@ -410,6 +412,9 @@ destination = OD %>%
   mutate(area = units::set_units(st_area(.), km^2),
          trips_d_km2 = as.numeric(trips_d/area)
          )
+
+sp_bounds = read_municipality(code_muni = 3550308) %>%
+  st_transform(crs = 4326)
   
 ```
 
@@ -423,7 +428,9 @@ tm_shape(origin) + tm_fill("trips_o_km2",
   tm_facets(by="time", nrow=3) +
   tm_layout(title = "RMSP: Origens",
             inner.margins = c(0, .02, .02, .02),
-            legend.outside = TRUE)
+            legend.outside = TRUE) +
+  tm_shape(sp_bounds) +
+  tm_borders(col = "red")
 
 ```
 
@@ -437,7 +444,9 @@ tm_shape(destination) + tm_fill("trips_d_km2",
   tm_facets(by="time", nrow=3) +
   tm_layout(title = "RMSP: Destinos",
             inner.margins = c(0, .02, .02, .02),
-            legend.outside = TRUE)
+            legend.outside = TRUE) +
+  tm_shape(sp_bounds) +
+  tm_borders(col = "red")
 
 ```
 
