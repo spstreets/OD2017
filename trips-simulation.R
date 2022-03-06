@@ -335,22 +335,14 @@ zone_level = routes_fast_base %>%
 
 tm_shape(zone_level) +
   tm_polygons(col = "delta_bike",
+              alpha = .5,
               title = "Aumento viagens de bicicleta") +
   tm_shape(sp_boundary) +
   tm_borders(col = "red")
 
 tm_shape(zone_level) +
   tm_polygons(col = "delta_foot",
+              alpha = .5,
               title = "Aumento de viagens a pé") +
   tm_shape(sp_boundary) +
   tm_borders(col = "red")
-
-
-
-
-
-
-
-
-
-
