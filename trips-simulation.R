@@ -285,7 +285,7 @@ base_bike %>%
   tm_shape() +
   tm_lines("bike", palette = "-viridis", breaks = bike_brks) +
   tm_shape(sp_boundary) +
-  tm_borders(col = "red", alpha = 0.25) +
+  tm_borders(col = "red", alpha = 0.5) +
   tm_shape(sao_miguel) +
   tm_borders(col = "red", lty = "dashed")
 
@@ -293,7 +293,7 @@ scenario_bike %>%
   tm_shape() +
   tm_lines("bike", palette = "-viridis", breaks = bike_brks) +
   tm_shape(sp_boundary) +
-  tm_borders(col="red", alpha = 0.25) +
+  tm_borders(col="red", alpha = 0.5) +
   tm_shape(sao_miguel) +
   tm_borders(col = "red", lty = "dashed")
 
@@ -301,7 +301,7 @@ base_walk %>%
   tm_shape() +
   tm_lines("foot", palette = "-viridis", breaks = foot_brks) +
   tm_shape(sp_boundary) +
-  tm_borders(col="red", alpha = 0.25) +
+  tm_borders(col="red", alpha = 0.5) +
   tm_shape(sao_miguel) +
   tm_borders(col = "red", lty = "dashed")
 
@@ -309,11 +309,48 @@ scenario_walk %>%
   tm_shape() +
   tm_lines("foot", palette = "-viridis", breaks = foot_brks) +
   tm_shape(sp_boundary) +
-  tm_borders(col="red", alpha = 0.25) +
+  tm_borders(col="red", alpha = 0.5) +
   tm_shape(sao_miguel) +
   tm_borders(col = "red", lty = "dashed")
 
+
 # Visualizations at the Zone level ---------------------------------------------
+
+zone_level = routes_fast_base %>%
+  ungroup() %>%
+  select(zona_o, zona_d, route_number, bike, foot) %>%
+  rename(foot_base = foot, bike_base = bike) %>%
+  left_join(routes_fast_active, by=c("zona_o", "zona_d", "route_number")) %>%
+  rename(bike_scenario = bike, foot_scenario = foot) %>%
+  select(zona_o, bike_base, bike_scenario, foot_base, foot_scenario) %>%
+  group_by(zona_o) %>%
+  summarise_all(sum) %>%
+  ungroup() %>%
+  mutate(delta_bike = bike_scenario - bike_base,
+         delta_foot = foot_scenario - foot_base,
+         zona_o = as.numeric(zona_o)
+         ) %>%
+  left_join(zonas_od, by=c("zona_o"="NumeroZona")) %>%
+  st_as_sf()
+
+tm_shape(zone_level) +
+  tm_polygons(col = "delta_bike",
+              title = "Aumento viagens de bicicleta") +
+  tm_shape(sp_boundary) +
+  tm_borders(col = "red")
+
+tm_shape(zone_level) +
+  tm_polygons(col = "delta_foot",
+              title = "Aumento de viagens a pé") +
+  tm_shape(sp_boundary) +
+  tm_borders(col = "red")
+
+
+
+
+
+
+
 
 
 
