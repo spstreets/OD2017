@@ -4,7 +4,7 @@ library(stplanr)
 library(tmap)
 tmap_mode("view") # interactive maps
 # piggyback::pb_download() # download data files
-remotes::install_github("atumworld/odrust")
+# remotes::install_github("atumworld/odrust")
 # remotes::install_github("dabreegster/odjitter", subdir = "R")
 library(pct)
 library(patchwork)
@@ -101,11 +101,13 @@ viagens_top = viagens_zl %>%
 viagens_top_sf = od::od_to_sf(viagens_top, zonas_od_to_jitter)
 qtm(viagens_top_sf)
 
-set.seed(42)
-od_jittered = odrust::odr_jitter(
-  od = viagens_zl, zones = zonas_od_to_jitter, subpoints = osm_sp,
-  disaggregation_threshold = 500, min_distance_meters = 100) # todo: try different thresholds
-plot(od_jittered$geometry, lwd = 0.1)
+# set.seed(42)
+# od_jittered = odrust::odr_jitter(
+#   od = viagens_zl, zones = zonas_od_to_jitter, subpoints = osm_sp,
+#   disaggregation_threshold = 500, min_distance_meters = 100) # todo: try different thresholds
+# plot(od_jittered$geometry, lwd = 0.1)
+
+od_jittered = st_read("./od_jittered_ZL.gpkg")
 
 od_jittered %>%
   top_n(1000, all) %>%
