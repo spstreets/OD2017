@@ -134,6 +134,7 @@ routes_fast_base = routes_fast %>%
             bike = first(bike),
             foot = first(foot),
             `Percent walk` = foot / all,
+            `Percent bike` = bike / all,
             public = first(public),
             other = first(other),
             rf_dist_km = first(rf_dist_km),
@@ -145,6 +146,7 @@ routes_fast_base = routes_fast %>%
 nrow(routes_fast_base)
 summary(routes_fast_base$zona_o == routes_fast_base$zona_d)
 sum(routes_fast_base$foot) / sum(routes_fast_base$all)
+
 g1 = routes_fast_base %>%
   ggplot(aes(rf_dist_km, `Percent walk`, size = all, alpha = 0.1)) +
   geom_point(show.legend = FALSE) +
@@ -157,14 +159,14 @@ g1 = routes_fast_base %>%
   theme_bw()
 g1
 
-m1 = lm(`Percent walk` ~ rf_dist_km, data = routes_fast_base)
+m1 = lm(`Percent walk` ~ rf_dist_km, data = routes_fast_base, weights = all)
 resids = m1$residuals + 1
 
 routes_fast_base_high_walk = routes_fast_base %>%
   ungroup() %>%
   sample_n(size = 4000, weight = resids)
 
-m2 = lm(`Percent walk` ~ rf_dist_km, data = routes_fast_base_high_walk)
+atum_foot = lm(`Percent walk` ~ rf_dist_km, data = routes_fast_base_high_walk, weights = all)
 sum(routes_fast_base_high_walk$foot) / sum(routes_fast_base_high_walk$all)
 
 g2 = routes_fast_base_high_walk %>%
@@ -181,7 +183,44 @@ g2 = routes_fast_base_high_walk %>%
 
 g1 + g2
 
+
+sp_pct =  stats::glm(formula = `Percent bike` ~
+                     rf_dist_km + sqrt(rf_dist_km) + I(rf_dist_km^2) + rf_avslope_perc +
+                       rf_dist_km*rf_avslope_perc + sqrt(rf_dist_km) * rf_avslope_perc,
+                     family = "quasibinomial",
+                     data = routes_fast_base,
+                     weights = all)
+
+# residuals here are a different thing because of the model (count)
+resids = routes_fast_base$`Percent bike` - sp_pct$fitted.values + 1
+
+# max(sp_pct$residuals)
+# min(sp_pct$residuals)
+
+ggplot(routes_fast_base) +
+  geom_density(aes(`Percent bike`), linetype="dashed") +
+  geom_density(aes(sp_pct$fitted.values)) +
+  xlim(0, 0.1) +
+  theme_bw()
+
+routes_fast_base_high_bike = routes_fast_base %>%
+  ungroup() %>%
+  sample_n(size = 800, weight = resids)  # a lot of zeros in bike trips, size has to be smaller than walk
+
+atum_bike = stats::glm(formula = `Percent bike` ~
+                         rf_dist_km + sqrt(rf_dist_km) + I(rf_dist_km^2) + rf_avslope_perc +
+                         rf_dist_km*rf_avslope_perc + sqrt(rf_dist_km) * rf_avslope_perc,
+                       family = "quasibinomial",
+                       data = routes_fast_base_high_bike,
+                       weights = all)
+
+sum(routes_fast_base_high_bike$bike) / sum(routes_fast_base_high_bike$all)
+
+
+
 routes_fast_active = routes_fast_base %>%
+  modelr::add_predictions(atum_foot, "lm_foot_proportion") %>%
+  modelr::add_predictions(atum_bike, "logit_pcycle") %>%
   mutate(
     # Simplistic 'actdev' way of calculating walking uptake
     # foot_increase_proportion = case_when(
@@ -191,13 +230,8 @@ routes_fast_active = routes_fast_base %>%
     #   rf_dist_km >= 1 & rf_dist_km < 2 ~ 0.1,
     #   TRUE ~ 0
     # ),
-    lm_foot_proportion = m2$coefficients[[1]] + m2$coefficients[[2]] * rf_dist_km,
+    bike_increase_proportion = boot::inv.logit(logit_pcycle),
     foot_increase_proportion = case_when(lm_foot_proportion < foot / all ~ foot / all, TRUE ~ lm_foot_proportion),
-    # Specify the Go Dutch scenario we will use to replace remaining car trips with cycling
-    bike_increase_proportion = uptake_pct_godutch_2020(
-      distance = rf_dist_km,
-      gradient = rf_avslope_perc
-    ),
     # Make the changes specified above
     car_reduction = car * foot_increase_proportion,
     car = car - car_reduction,
@@ -265,6 +299,7 @@ g2 = ggplot(active_results) +
   theme_bw()
 g1 + g2
 
+sum(routes_fast_active$bike) - sum(routes_fast_base$bike)
 
 # Visualizations at the route level --------------------------------------------
 
