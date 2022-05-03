@@ -107,6 +107,7 @@ qtm(viagens_top_sf)
 #   disaggregation_threshold = 500, min_distance_meters = 100) # todo: try different thresholds
 # plot(od_jittered$geometry, lwd = 0.1)
 
+piggyback::pb_download("od_jittered_ZL.gpkg")
 od_jittered = st_read("./od_jittered_ZL.gpkg")
 
 od_jittered %>%
@@ -255,7 +256,7 @@ routes_fast_active = routes_fast_base %>%
     bike_increase_proportion = boot::inv.logit(logit_pcycle),
     foot_increase_proportion = case_when(lm_foot_proportion < foot / all ~ foot / all, TRUE ~ lm_foot_proportion),
     # Make the changes specified above
-    foot_increase_proportion = case_when(
+    foot_proportion = case_when(
       rf_dist_km > 6 ~ 0,
       TRUE ~ foot_increase_proportion
     ),
@@ -263,7 +264,8 @@ routes_fast_active = routes_fast_base %>%
       rf_dist_km > 30 ~ 0,
       TRUE ~ bike_increase_proportion
     ),
-    car_reduction = car * foot_increase_proportion,
+    foot_corto_prazo = all * foot_proportion,
+    car_reduction = car - (foot_corto_prazo - foot),
     car_reduction = case_when(
       car_reduction > car ~ car,
       TRUE ~ car_reduction
@@ -276,6 +278,7 @@ routes_fast_active = routes_fast_base %>%
     `Percent walk` = foot / all
   )
 
+sum(routes_fast$foot) / sum(routes_fast$all)
 sum(routes_fast_active$foot) / sum(routes_fast_active$all)
 
 g3 = routes_fast_active %>%
