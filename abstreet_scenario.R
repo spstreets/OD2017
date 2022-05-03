@@ -8,7 +8,8 @@ zonas_od = readRDS("./zonas_od.Rds")
 
 set.seed(2022)
 
-area_traffic_calming = st_read("area_traffic_calming.gpkg")
+area_traffic_calming = st_read("area_traffic_calming.gpkg") %>%
+  st_buffer(units::set_units(500, m))
 
 zonas_od_area = zonas_od %>%          # sf_use_s2(FALSE)
   st_centroid() %>%
@@ -86,4 +87,7 @@ scenario = ab_json(sao_miguel_disaggregated,
                    mode_column = "mode_ab_streets",
                    scenario_name = "Full")
 
-ab_save(scenario, "all_trips.json")
+ab_save(scenario, "all_trips_buffer500m.json")
+st_write(area_traffic_calming, "sao_miguel_buffer500m.geojson")
+
+
