@@ -192,7 +192,7 @@ sp_pct =  stats::glm(formula = `Percent bike` ~
                      weights = all)
 
 # residuals here are a different thing because of the model (count)
-resids = routes_fast_base$`Percent bike` - sp_pct$fitted.values + 1
+routes_fast_base$resids = routes_fast_base$`Percent bike` - sp_pct$fitted.values
 
 # max(sp_pct$residuals)
 # min(sp_pct$residuals)
@@ -205,7 +205,7 @@ ggplot(routes_fast_base) +
 
 routes_fast_base_high_bike = routes_fast_base %>%
   ungroup() %>%
-  sample_n(size = 150, weight = resids)  # a lot of zeros in bike trips, size has to be smaller than walk
+  slice_max(resids, n = 4000)  # a lot of zeros in bike trips, size has to be smaller than walk
 
 atum_bike = stats::glm(formula = `Percent bike` ~
                          rf_dist_km + sqrt(rf_dist_km) + I(rf_dist_km^2) + rf_avslope_perc +
@@ -215,7 +215,6 @@ atum_bike = stats::glm(formula = `Percent bike` ~
                        weights = all)
 
 sum(routes_fast_base_high_bike$bike) / sum(routes_fast_base_high_bike$all)
-
 
 
 routes_fast_active = routes_fast_base %>%
