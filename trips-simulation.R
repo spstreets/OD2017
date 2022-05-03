@@ -205,7 +205,7 @@ ggplot(routes_fast_base) +
 
 routes_fast_base_high_bike = routes_fast_base %>%
   ungroup() %>%
-  sample_n(size = 800, weight = resids)  # a lot of zeros in bike trips, size has to be smaller than walk
+  sample_n(size = 150, weight = resids)  # a lot of zeros in bike trips, size has to be smaller than walk
 
 atum_bike = stats::glm(formula = `Percent bike` ~
                          rf_dist_km + sqrt(rf_dist_km) + I(rf_dist_km^2) + rf_avslope_perc +
