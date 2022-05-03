@@ -194,6 +194,17 @@ sp_pct =  stats::glm(formula = `Percent bike` ~
 # residuals here are a different thing because of the model (count)
 routes_fast_base$resids = routes_fast_base$`Percent bike` - sp_pct$fitted.values
 
+
+sp_pct_foot =  stats::glm(formula = `Percent walk` ~
+                       rf_dist_km + sqrt(rf_dist_km) + I(rf_dist_km^2) + rf_avslope_perc +
+                       rf_dist_km*rf_avslope_perc + sqrt(rf_dist_km) * rf_avslope_perc,
+                     family = "quasibinomial",
+                     data = routes_fast_base,
+                     weights = all)
+
+routes_fast_base$resids_foot = routes_fast_base$`Percent walk` - sp_pct_foot$fitted.values
+
+
 # max(sp_pct$residuals)
 # min(sp_pct$residuals)
 
@@ -205,13 +216,25 @@ ggplot(routes_fast_base) +
 
 routes_fast_base_high_bike = routes_fast_base %>%
   ungroup() %>%
-  slice_max(resids, n = 4000)  # a lot of zeros in bike trips, size has to be smaller than walk
+  slice_max(resids, n = 2000)  # a lot of zeros in bike trips, size has to be smaller than walk
+
+routes_fast_base_high_foot = routes_fast_base %>%
+  ungroup() %>%
+  slice_max(resids_foot, n = 12000)
+
 
 atum_bike = stats::glm(formula = `Percent bike` ~
                          rf_dist_km + sqrt(rf_dist_km) + I(rf_dist_km^2) + rf_avslope_perc +
                          rf_dist_km*rf_avslope_perc + sqrt(rf_dist_km) * rf_avslope_perc,
                        family = "quasibinomial",
                        data = routes_fast_base_high_bike,
+                       weights = all)
+
+atum_foot = stats::glm(formula = `Percent walk` ~
+                         rf_dist_km + sqrt(rf_dist_km) + I(rf_dist_km^2) + rf_avslope_perc +
+                         rf_dist_km*rf_avslope_perc + sqrt(rf_dist_km) * rf_avslope_perc,
+                       family = "quasibinomial",
+                       data = routes_fast_base_high_foot,
                        weights = all)
 
 sum(routes_fast_base_high_bike$bike) / sum(routes_fast_base_high_bike$all)
@@ -232,7 +255,19 @@ routes_fast_active = routes_fast_base %>%
     bike_increase_proportion = boot::inv.logit(logit_pcycle),
     foot_increase_proportion = case_when(lm_foot_proportion < foot / all ~ foot / all, TRUE ~ lm_foot_proportion),
     # Make the changes specified above
+    foot_increase_proportion = case_when(
+      rf_dist_km > 6 ~ 0,
+      TRUE ~ foot_increase_proportion
+    ),
+    bike_increase_proportion = case_when(
+      rf_dist_km > 30 ~ 0,
+      TRUE ~ bike_increase_proportion
+    ),
     car_reduction = car * foot_increase_proportion,
+    car_reduction = case_when(
+      car_reduction > car ~ car,
+      TRUE ~ car_reduction
+    ),
     car = car - car_reduction,
     foot = foot + car_reduction,
     car_reduction = car * bike_increase_proportion,
@@ -299,6 +334,7 @@ g2 = ggplot(active_results) +
 g1 + g2
 
 sum(routes_fast_active$bike) - sum(routes_fast_base$bike)
+
 
 # Visualizations at the route level --------------------------------------------
 
