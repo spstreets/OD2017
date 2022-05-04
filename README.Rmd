@@ -23,6 +23,7 @@ tmap_mode("view")
 <!-- badges: end -->
 
 The goal of this repo is to host code for the analysis of OD data from the 2017 household travel survey in Sao Paulo.
+
 The data has the following structure.
 
 ```{r}

@@ -24,7 +24,7 @@ library(osrm)
 # folder = "~/Dropbox/DATA/"
 # folder = "~/hd/data/project-data/spshared/"
 
-pb_download(repo = "spstreets/OD2017")
+# pb_download(repo = "spstreets/OD2017")
 
 # folder = "~/hd/data/project-data/spshared/"
 # load(file.path(folder, "OD2017.rda"))
@@ -38,20 +38,18 @@ I create this separated document to be the main reference on the exploratory dat
 
 The data set contains a lot of socioeconomic variables. Since our interest relies on trips, flows and mode choices, the analyses so far are at the trip level. In this context, the variables that contain a the modes used in each trip are the main ones (`modo1`, `modo2`, `modo3`, and `modo4`). There is also the coordinates for each residence (`co_dom_x` and `co_dom_y`) and workplaces (`co_tr1_x` and `co_tr1_y`), and obviously the origin and destination zones and coordinates (e.g. `zona_o`, `co_o_x`, `co_o_y`) and euclidean distance. As you can see in the graph below, the vast majority of trips are made using just one mode. I use the main mode used in the trip (`modoprin`) in the remaining graphs. 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
 OD_2017_v1 = OD_2017_v1 %>%
+  rowwise() %>%
   mutate(
-    n_modes = case_when(
-      !is.na(modo1) & is.na(modo2) & is.na(modo3) & is.na(modo4)    ~ "1",
-      !is.na(modo1) & !is.na(modo2) & is.na(modo3) & is.na(modo4)   ~ "2",
-      !is.na(modo1) & !is.na(modo2) & !is.na(modo3) & is.na(modo4)  ~ "3",
-      !is.na(modo1) & !is.na(modo2) & !is.na(modo3) & !is.na(modo4) ~ "4"
-    )
-  )
+    n_modes = n_distinct(c(modo1, modo2, modo3, modo4), na.rm = TRUE)
+  ) %>%
+  ungroup()
   
 
 OD_2017_v1 %>%
+  filter(!is.na(modoprin)) %>%
   ggplot() +
   geom_bar(aes(n_modes, weight=fe_via)) +
   scale_y_continuous(name = "Milhares de viagens / dia",
@@ -135,6 +133,8 @@ Now the mode share by distance (using the first recategorisation). The average t
 
 ```{r, echo=FALSE}
 
+col_modes = c("#fe5f55", "grey", "#ffd166", "#457b9d")
+
 OD_2017_v1 %>%
   filter(!is.na(modoprin)) %>%
   mutate(
@@ -146,6 +146,12 @@ OD_2017_v1 %>%
   select(dist_bands, modo_simples, fe_via) %>%
   group_by(dist_bands, modo_simples) %>%
   summarise(Trips = sum(fe_via)) %>%
+  mutate(modo_simples = factor(modo_simples, levels = c("Individual motorizado",
+                                                        "Outro",
+                                                        "Público",
+                                                        "Ativo")
+                               )
+         ) %>%
   ggplot(aes(x = dist_bands, y = Trips, fill = modo_simples)) +
   geom_col() +
   xlab("Distância (km)") +
@@ -154,13 +160,15 @@ OD_2017_v1 %>%
                                                big.mark = ",",
                                                decimal.mark = ".",
                                                scientific = FALSE)) +
-  scale_fill_brewer(palette = "Set1", name = "Modo") +
+  scale_fill_manual(values = col_modes, name = "Modo") +
   theme_bw()
 
 ```
 
 
 ```{r, echo=FALSE}
+
+col_modes = c("#fe5f55", "grey", "#ffd166", "#90be6d", "#457b9d")
 
 OD_2017_v1 %>%
   filter(!is.na(modoprin)) %>%
@@ -173,6 +181,13 @@ OD_2017_v1 %>%
   select(dist_bands, mode_ab_streets, fe_via) %>%
   group_by(dist_bands, mode_ab_streets) %>%
   summarise(Trips = sum(fe_via)) %>%
+  mutate(mode_ab_streets = factor(mode_ab_streets, levels = c("Carro",
+                                                              "Outro",
+                                                              "Transporte público",
+                                                              "Bicicleta",
+                                                              "A pé")
+                                  )
+         ) %>%
   ggplot(aes(x = dist_bands, y = Trips, fill = mode_ab_streets)) +
   geom_col() +
   ggtitle("Classificação A/B Streets") +
@@ -182,7 +197,7 @@ OD_2017_v1 %>%
                                                big.mark = ",",
                                                decimal.mark = ".",
                                                scientific = FALSE)) +
-  scale_fill_brewer(palette = "Set1", name = "Modo") +
+  scale_fill_manual(values = col_modes, name = "Modo") +
   theme_bw()
 
 ```
@@ -343,6 +358,8 @@ OD_2017_v1 %>%
 zonas_od = readRDS("zonas_od.Rds")
 tmap_mode("plot")                     # mode = view breaks some plots (why? ask Robin)
 
+
+
 ```
 
 Here I plot the main zones of origin and destination using the total number of trips -- always using the survey's expansion factor. It is interesting to note that there is no centrality pattern when we look at the main Zones of Destination. Maybe we should restrict the analysis to specific types of trips (e.g., commute strictly defined). I checked these results with the official Tables and they are the same in terms of the main zones of origin and destination.
@@ -362,7 +379,8 @@ OD = OD_2017_v1 %>%
       h_saida >= 0 & h_saida < 10 ~ "Manhã",
       h_saida >= 10 & h_saida < 15 ~ "Tarde",
       h_saida >=15 & h_saida <= 23 ~ "Noite"
-    )
+    ),
+    across(time, factor, levels=c("Manhã","Tarde","Noite"))
          ) %>%
   select(zona_o, zona_d, time, public, car, motorcycle, bike, foot, other) %>%
   group_by(zona_o, zona_d, time) %>%
@@ -394,6 +412,9 @@ destination = OD %>%
   mutate(area = units::set_units(st_area(.), km^2),
          trips_d_km2 = as.numeric(trips_d/area)
          )
+
+sp_bounds = read_municipality(code_muni = 3550308) %>%
+  st_transform(crs = 4326)
   
 ```
 
@@ -407,7 +428,9 @@ tm_shape(origin) + tm_fill("trips_o_km2",
   tm_facets(by="time", nrow=3) +
   tm_layout(title = "RMSP: Origens",
             inner.margins = c(0, .02, .02, .02),
-            legend.outside = TRUE)
+            legend.outside = TRUE) +
+  tm_shape(sp_bounds) +
+  tm_borders(col = "red")
 
 ```
 
@@ -421,7 +444,9 @@ tm_shape(destination) + tm_fill("trips_d_km2",
   tm_facets(by="time", nrow=3) +
   tm_layout(title = "RMSP: Destinos",
             inner.margins = c(0, .02, .02, .02),
-            legend.outside = TRUE)
+            legend.outside = TRUE) +
+  tm_shape(sp_bounds) +
+  tm_borders(col = "red")
 
 ```
 
@@ -678,7 +703,7 @@ Bike trips:
 
 ```{r, echo=FALSE}
 
-desire_lines_bike = od2line(bike_pairs, zonas_od)
+desire_lines_bike = od_jitter(bike_pairs, zonas_od)
 
 tm_shape(desire_lines_bike) +
   tm_lines(palette = "plasma",
@@ -699,7 +724,7 @@ Foot trips:
 
 ```{r, echo=FALSE}
 
-desire_lines_foot = od2line(foot_pairs, zonas_od)
+desire_lines_foot = od_jitter(foot_pairs, zonas_od)
 
 tm_shape(desire_lines_foot) +
   tm_lines(palette = "plasma",
@@ -720,7 +745,7 @@ Car trips, still too many lines (10,000) to account for >92% of total car trips.
 
 ```{r, echo=FALSE}
 
-desire_lines_car = od2line(car_pairs, zonas_od)
+desire_lines_car = od_jitter(car_pairs, zonas_od)
 
 tm_shape(desire_lines_car) +
   tm_lines(palette = "plasma",
