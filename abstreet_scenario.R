@@ -9,7 +9,8 @@ zonas_od = readRDS("./zonas_od.Rds")
 set.seed(2022)
 
 area_traffic_calming = st_read("area_traffic_calming.gpkg") %>%
-  st_buffer(units::set_units(500, m))
+  st_buffer(units::set_units(500, m)) %>%
+  st_simplify(dTolerance = 50)
 
 zonas_od_area = zonas_od %>%          # sf_use_s2(FALSE)
   st_centroid() %>%
