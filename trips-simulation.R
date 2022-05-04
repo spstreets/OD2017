@@ -221,7 +221,7 @@ routes_fast_base_high_bike = routes_fast_base %>%
 
 routes_fast_base_high_foot = routes_fast_base %>%
   ungroup() %>%
-  slice_max(resids_foot, n = 12000)
+  slice_max(resids_foot, n = 2000)
 
 
 atum_bike = stats::glm(formula = `Percent bike` ~
@@ -235,14 +235,20 @@ atum_foot = stats::glm(formula = `Percent walk` ~
                          rf_dist_km + sqrt(rf_dist_km) + I(rf_dist_km^2) + rf_avslope_perc +
                          rf_dist_km*rf_avslope_perc + sqrt(rf_dist_km) * rf_avslope_perc,
                        family = "quasibinomial",
-                       data = routes_fast_base_high_foot,
+                       data = routes_fast_base_high_foot %>% filter(rf_dist_km < 6),
                        weights = all)
 
 sum(routes_fast_base_high_bike$bike) / sum(routes_fast_base_high_bike$all)
 
+ggplot(routes_fast_base) +
+  geom_density(aes(`Percent walk`), linetype="dashed") +
+  geom_density(aes(sp_pct_foot$fitted.values)) +
+  xlim(0, 1) +
+  theme_bw()
+
 
 routes_fast_active = routes_fast_base %>%
-  modelr::add_predictions(atum_foot, "lm_foot_proportion") %>%
+  modelr::add_predictions(atum_foot, "logit_foot") %>%
   modelr::add_predictions(atum_bike, "logit_pcycle") %>%
   mutate(
     # Simplistic 'actdev' way of calculating walking uptake
@@ -254,7 +260,9 @@ routes_fast_active = routes_fast_base %>%
     #   TRUE ~ 0
     # ),
     bike_increase_proportion = boot::inv.logit(logit_pcycle),
-    foot_increase_proportion = case_when(lm_foot_proportion < foot / all ~ foot / all, TRUE ~ lm_foot_proportion),
+    foot_increase_proportion = boot::inv.logit(logit_foot),
+    foot_increase_proportion = case_when(foot_increase_proportion < foot / all ~ foot / all,
+                                         TRUE ~ foot_increase_proportion),
     # Make the changes specified above
     foot_proportion = case_when(
       rf_dist_km > 6 ~ 0,
@@ -266,10 +274,6 @@ routes_fast_active = routes_fast_base %>%
     ),
     foot_corto_prazo = all * foot_proportion,
     car_reduction = car - (foot_corto_prazo - foot),
-    car_reduction = case_when(
-      car_reduction > car ~ car,
-      TRUE ~ car_reduction
-    ),
     car = car - car_reduction,
     foot = foot + car_reduction,
     car_reduction = car * bike_increase_proportion,
