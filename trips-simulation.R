@@ -107,7 +107,7 @@ qtm(viagens_top_sf)
 #   disaggregation_threshold = 500, min_distance_meters = 100) # todo: try different thresholds
 # plot(od_jittered$geometry, lwd = 0.1)
 
-piggyback::pb_download("od_jittered_ZL.gpkg")
+# piggyback::pb_download("od_jittered_ZL.gpkg")
 od_jittered = st_read("./od_jittered_ZL.gpkg")
 
 od_jittered %>%
@@ -148,42 +148,6 @@ nrow(routes_fast_base)
 summary(routes_fast_base$zona_o == routes_fast_base$zona_d)
 sum(routes_fast_base$foot) / sum(routes_fast_base$all)
 
-g1 = routes_fast_base %>%
-  ggplot(aes(rf_dist_km, `Percent walk`, size = all, alpha = 0.1)) +
-  geom_point(show.legend = FALSE) +
-  geom_smooth(method = lm, se = FALSE, show.legend = FALSE) +
-  xlim(c(0, 5)) +
-  xlab("Distância (km)") +
-  ylab("% de viagens a pé") +
-  ggtitle("Todas as rotas") +
-  scale_y_continuous(labels = scales::percent) +
-  theme_bw()
-g1
-
-m1 = lm(`Percent walk` ~ rf_dist_km, data = routes_fast_base, weights = all)
-resids = m1$residuals + 1
-
-routes_fast_base_high_walk = routes_fast_base %>%
-  ungroup() %>%
-  sample_n(size = 4000, weight = resids)
-
-atum_foot = lm(`Percent walk` ~ rf_dist_km, data = routes_fast_base_high_walk, weights = all)
-sum(routes_fast_base_high_walk$foot) / sum(routes_fast_base_high_walk$all)
-
-g2 = routes_fast_base_high_walk %>%
-  ggplot(aes(rf_dist_km, `Percent walk`, size = all, alpha = 0.1)) +
-  geom_point(show.legend = FALSE) +
-  geom_smooth(method = lm, se = FALSE, show.legend = FALSE) +
-  # geom_smooth(method = lm, formula = y ~ splines::bs(x, 2), se = FALSE) +
-  xlim(c(0, 5)) +
-  xlab("Distância (km)") +
-  ylab("% de viagens a pé") +
-  ggtitle("Maior propensão a viajar a pé") +
-  scale_y_continuous(labels = scales::percent) +
-  theme_bw()
-
-g1 + g2
-
 
 sp_pct =  stats::glm(formula = `Percent bike` ~
                      rf_dist_km + sqrt(rf_dist_km) + I(rf_dist_km^2) + rf_avslope_perc +
@@ -205,10 +169,6 @@ sp_pct_foot =  stats::glm(formula = `Percent walk` ~
 
 routes_fast_base$resids_foot = routes_fast_base$`Percent walk` - sp_pct_foot$fitted.values
 
-
-# max(sp_pct$residuals)
-# min(sp_pct$residuals)
-
 ggplot(routes_fast_base) +
   geom_density(aes(`Percent bike`), linetype="dashed") +
   geom_density(aes(sp_pct$fitted.values)) +
@@ -217,11 +177,11 @@ ggplot(routes_fast_base) +
 
 routes_fast_base_high_bike = routes_fast_base %>%
   ungroup() %>%
-  slice_max(resids, n = 2000)  # a lot of zeros in bike trips, size has to be smaller than walk
+  slice_max(resids, n = 4000)  # a lot of zeros in bike trips, size has to be smaller than walk
 
 routes_fast_base_high_foot = routes_fast_base %>%
   ungroup() %>%
-  slice_max(resids_foot, n = 2000)
+  slice_max(resids_foot, n = 4000)
 
 
 atum_bike = stats::glm(formula = `Percent bike` ~
@@ -238,45 +198,32 @@ atum_foot = stats::glm(formula = `Percent walk` ~
                        data = routes_fast_base_high_foot %>% filter(rf_dist_km < 6),
                        weights = all)
 
-sum(routes_fast_base_high_bike$bike) / sum(routes_fast_base_high_bike$all)
-
-ggplot(routes_fast_base) +
-  geom_density(aes(`Percent walk`), linetype="dashed") +
-  geom_density(aes(sp_pct_foot$fitted.values)) +
-  xlim(0, 1) +
-  theme_bw()
-
 
 routes_fast_active = routes_fast_base %>%
   modelr::add_predictions(atum_foot, "logit_foot") %>%
   modelr::add_predictions(atum_bike, "logit_pcycle") %>%
   mutate(
-    # Simplistic 'actdev' way of calculating walking uptake
-    # foot_increase_proportion = case_when(
-    #   # specifies that 50% of car journeys <1km in length will be replaced with walking
-    #   rf_dist_km < 1 ~ 0.5,
-    #   # specifies that 10% of car journeys 1-2km in length will be replaced with walking
-    #   rf_dist_km >= 1 & rf_dist_km < 2 ~ 0.1,
-    #   TRUE ~ 0
-    # ),
     bike_increase_proportion = boot::inv.logit(logit_pcycle),
     foot_increase_proportion = boot::inv.logit(logit_foot),
     foot_increase_proportion = case_when(foot_increase_proportion < foot / all ~ foot / all,
+                                         rf_dist_km > 6 ~ 0,
                                          TRUE ~ foot_increase_proportion),
-    # Make the changes specified above
-    foot_proportion = case_when(
-      rf_dist_km > 6 ~ 0,
-      TRUE ~ foot_increase_proportion
-    ),
     bike_increase_proportion = case_when(
       rf_dist_km > 30 ~ 0,
       TRUE ~ bike_increase_proportion
     ),
-    foot_corto_prazo = all * foot_proportion,
-    car_reduction = car - (foot_corto_prazo - foot),
+    foot_corto_prazo = all * foot_increase_proportion,
+    car_reduction = case_when(
+      foot_corto_prazo - foot >= car ~ car,
+      foot_corto_prazo == 0 ~ 0,
+      TRUE ~ car - (foot_corto_prazo - foot)
+    ),
     car = car - car_reduction,
     foot = foot + car_reduction,
-    car_reduction = car * bike_increase_proportion,
+    car_reduction = case_when(                    # just to avoid some floating point problems
+      car * bike_increase_proportion > car ~ car,
+      TRUE ~ car * bike_increase_proportion
+    ),
     car = car - car_reduction,
     bike = bike + car_reduction,
     `Percent walk` = foot / all
@@ -285,18 +232,6 @@ routes_fast_active = routes_fast_base %>%
 sum(routes_fast$foot) / sum(routes_fast$all)
 sum(routes_fast_active$foot) / sum(routes_fast_active$all)
 
-g3 = routes_fast_active %>%
-  ggplot(aes(rf_dist_km, `Percent walk`, size = all, alpha = 0.1)) +
-  geom_point(show.legend = FALSE) +
-  geom_smooth(method = lm, se = FALSE, show.legend = FALSE) +
-  xlim(c(0, 5)) +
-  xlab("Distância (km)") +
-  ylab("% de viagens a pé") +
-  ggtitle("Cenário contrafactual") +
-  scale_y_continuous(labels = scales::percent) +
-  theme_bw()
-
-g1 + g2 + g3
 
 col_modes = c("#fe5f55", "grey", "#ffd166", "#90be6d", "#457b9d")
 # Plot bar chart showing modal share by distance band for existing journeys
