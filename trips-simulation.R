@@ -229,11 +229,36 @@ routes_fast_active = routes_fast_base %>%
     `Percent walk` = foot / all
   )
 
-sum(routes_fast$foot) / sum(routes_fast$all)
-sum(routes_fast_active$foot) / sum(routes_fast_active$all)
+
+routes_fast_go_dutch = routes_fast_base %>%
+  mutate(
+    # Specify the Go Dutch scenario we will use to replace remaining car trips with cycling
+    bike_increase_proportion = uptake_pct_godutch_2020(
+      distance = rf_dist_km,
+      gradient = rf_avslope_perc
+    ),
+    car_reduction = car * bike_increase_proportion,
+    car = car - car_reduction,
+    bike = bike + car_reduction,
+    `Percent walk` = foot / all
+  )
+
+routes_fast_ebikes = routes_fast_base %>%
+  mutate(
+    # Specify the Go Dutch scenario we will use to replace remaining car trips with cycling
+    bike_increase_proportion = uptake_pct_ebike_2020(
+      distance = rf_dist_km,
+      gradient = rf_avslope_perc
+    ),
+    car_reduction = car * bike_increase_proportion,
+    car = car - car_reduction,
+    bike = bike + car_reduction,
+    `Percent walk` = foot / all
+  )
 
 
 col_modes = c("#fe5f55", "grey", "#ffd166", "#90be6d", "#457b9d")
+
 # Plot bar chart showing modal share by distance band for existing journeys
 base_results = routes_fast_base %>%
   dplyr::select(dist_bands, car, other, public, bike, foot) %>%
@@ -241,6 +266,28 @@ base_results = routes_fast_base %>%
   mutate(mode = factor(mode, levels = c("car", "other", "public", "bike", "foot"), ordered = TRUE)) %>%
   group_by(dist_bands, mode) %>%
   summarise(Trips = sum(value))
+
+active_results = routes_fast_active %>%
+  dplyr::select(dist_bands, car, other, public, bike, foot) %>%
+  tidyr::pivot_longer(cols = matches("car|other|publ|bike|foot"), names_to = "mode") %>%
+  mutate(mode = factor(mode, levels = c("car", "other", "public", "bike", "foot"), ordered = TRUE)) %>%
+  group_by(dist_bands, mode) %>%
+  summarise(Trips = sum(value))
+
+go_dutch_results = routes_fast_go_dutch %>%
+  dplyr::select(dist_bands, car, other, public, bike, foot) %>%
+  tidyr::pivot_longer(cols = matches("car|other|publ|bike|foot"), names_to = "mode") %>%
+  mutate(mode = factor(mode, levels = c("car", "other", "public", "bike", "foot"), ordered = TRUE)) %>%
+  group_by(dist_bands, mode) %>%
+  summarise(Trips = sum(value))
+
+ebikes_results = routes_fast_ebikes %>%
+  dplyr::select(dist_bands, car, other, public, bike, foot) %>%
+  tidyr::pivot_longer(cols = matches("car|other|publ|bike|foot"), names_to = "mode") %>%
+  mutate(mode = factor(mode, levels = c("car", "other", "public", "bike", "foot"), ordered = TRUE)) %>%
+  group_by(dist_bands, mode) %>%
+  summarise(Trips = sum(value))
+
 
 g1 = ggplot(base_results) +
   geom_col(aes(dist_bands, Trips, fill = mode)) +
@@ -253,18 +300,10 @@ g1 = ggplot(base_results) +
                                                scientific = FALSE)) +
   scale_fill_manual(values = col_modes, name = "Modo") +
   theme_bw()
-g1
-
-active_results = routes_fast_active %>%
-  dplyr::select(dist_bands, car, other, public, bike, foot) %>%
-  tidyr::pivot_longer(cols = matches("car|other|publ|bike|foot"), names_to = "mode") %>%
-  mutate(mode = factor(mode, levels = c("car", "other", "public", "bike", "foot"), ordered = TRUE)) %>%
-  group_by(dist_bands, mode) %>%
-  summarise(Trips = sum(value))
 
 g2 = ggplot(active_results) +
   geom_col(aes(dist_bands, Trips, fill = mode)) +
-  ggtitle("Cenário Contrafactual") +
+  ggtitle("Cenário de Curto-Prazo") +
   xlab("Distância (km)") +
   scale_y_continuous(name = "Milhares de viagens / dia",
                      labels=function(x) format(x/1000,
@@ -273,9 +312,32 @@ g2 = ggplot(active_results) +
                                                scientific = FALSE)) +
   scale_fill_manual(values = col_modes, name = "Modo") +
   theme_bw()
-g1 + g2
 
-sum(routes_fast_active$bike) - sum(routes_fast_base$bike)
+g3 = ggplot(go_dutch_results) +
+  geom_col(aes(dist_bands, Trips, fill = mode)) +
+  ggtitle("Cenário Go Dutch") +
+  xlab("Distância (km)") +
+  scale_y_continuous(name = "Milhares de viagens / dia",
+                     labels=function(x) format(x/1000,
+                                               big.mark = ",",
+                                               decimal.mark = ".",
+                                               scientific = FALSE)) +
+  scale_fill_manual(values = col_modes, name = "Modo") +
+  theme_bw()
+
+g4 = ggplot(ebikes_results) +
+  geom_col(aes(dist_bands, Trips, fill = mode)) +
+  ggtitle("Cenário Ebike") +
+  xlab("Distância (km)") +
+  scale_y_continuous(name = "Milhares de viagens / dia",
+                     labels=function(x) format(x/1000,
+                                               big.mark = ",",
+                                               decimal.mark = ".",
+                                               scientific = FALSE)) +
+  scale_fill_manual(values = col_modes, name = "Modo") +
+  theme_bw()
+
+(g1 | g2 ) / (g3 | g4 )
 
 
 # Visualizations at the route level --------------------------------------------
