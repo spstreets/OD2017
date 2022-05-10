@@ -441,25 +441,37 @@ bike4 = ebikes_bike %>%
 tmap_arrange(bike1, bike2, bike3, bike4, ncol = 2) %>%
   tmap_save("route_level.png")
 
-
-
 # Foot trips
 
-base_walk %>%
+foot1 = base_walk %>%
   tm_shape() +
   tm_lines("foot", palette = "-viridis", breaks = foot_brks) +
   tm_shape(sp_boundary) +
-  tm_borders(col="red", alpha = 0.5) +
+  tm_borders(col="red") +
   tm_shape(sao_miguel) +
-  tm_borders(col = "red", lty = "dashed")
+  tm_borders(col = "red", lty = "dashed") +
+  tm_layout(
+    title = "Base",
+    legend.show = FALSE,
+    frame = FALSE
+  )
 
-scenario_walk %>%
+
+foot2 = active_walk %>%
   tm_shape() +
   tm_lines("foot", palette = "-viridis", breaks = foot_brks) +
   tm_shape(sp_boundary) +
-  tm_borders(col="red", alpha = 0.5) +
+  tm_borders(col="red") +
   tm_shape(sao_miguel) +
-  tm_borders(col = "red", lty = "dashed")
+  tm_borders(col = "red", lty = "dashed") +
+  tm_layout(
+    title = "Curto-Prazo",
+    legend.show = FALSE,
+    frame = FALSE
+  )
+
+tmap_arrange(foot1, foot2, ncol = 2) %>%
+  tmap_save("route_level_foot.png")
 
 
 # Visualizations at the Zone level ---------------------------------------------
