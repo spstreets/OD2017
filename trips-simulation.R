@@ -232,7 +232,6 @@ routes_fast_active = routes_fast_base %>%
 
 routes_fast_go_dutch = routes_fast_base %>%
   mutate(
-    # Specify the Go Dutch scenario we will use to replace remaining car trips with cycling
     bike_increase_proportion = uptake_pct_godutch_2020(
       distance = rf_dist_km,
       gradient = rf_avslope_perc
@@ -245,7 +244,6 @@ routes_fast_go_dutch = routes_fast_base %>%
 
 routes_fast_ebikes = routes_fast_base %>%
   mutate(
-    # Specify the Go Dutch scenario we will use to replace remaining car trips with cycling
     bike_increase_proportion = uptake_pct_ebike_2020(
       distance = rf_dist_km,
       gradient = rf_avslope_perc
@@ -342,36 +340,110 @@ g4 = ggplot(ebikes_results) +
 
 # Visualizations at the route level --------------------------------------------
 
-base_bike = overline(routes_fast, "bike")
-base_walk = overline(routes_fast, "foot")
+rm("od_jittered", "osm_sp", "viagens_zl", "viagens_top", "viagens_top_sf")
+gc()
 
 sao_miguel = st_read("./sao_miguel_paulista.geojson")
 
-scenario = routes_fast %>%
+base_bike = overline(routes_fast, "bike")
+base_walk = overline(routes_fast, "foot")
+
+active = routes_fast %>%
   select(zona_o, zona_d, route_number) %>%
   left_join(routes_fast_active, by=c("zona_o", "zona_d", "route_number"))
 
-scenario_bike = overline(scenario, "bike")
-scenario_walk = overline(scenario, "foot")
+go_dutch = routes_fast %>%
+  select(zona_o, zona_d, route_number) %>%
+  left_join(routes_fast_go_dutch, by = c("zona_o", "zona_d", "route_number"))
+
+ebikes = routes_fast %>%
+  select(zona_o, zona_d, route_number) %>%
+  left_join(routes_fast_ebikes, by = c("zona_o", "zona_d", "route_number"))
+
+active_bike = overline(active, "bike")
+ebikes_bike = overline(ebikes, "bike")
+go_dutch_bike = overline(go_dutch, "bike")
+
+active_walk = overline(active, "foot")
+
+rm("ebikes", "go_dutch", "active")
+
+
+tmap_mode("plot")
 
 bike_brks = c(0, 100, 500, 1000, 5000, 10000, 20000)       # keep consistent with the active scenario
 foot_brks = c(0, 1000, 5000, 10000, 25000, 50000)
 
-base_bike %>%
+bike1 = base_bike %>%
   tm_shape() +
-  tm_lines("bike", palette = "-viridis", breaks = bike_brks) +
+  tm_lines("bike",
+           title.col = "Viagens de bicicleta",
+           palette = "-viridis",
+           breaks = bike_brks) +
   tm_shape(sp_boundary) +
-  tm_borders(col = "red", alpha = 0.5) +
+  tm_borders(col = "red") +
   tm_shape(sao_miguel) +
-  tm_borders(col = "red", lty = "dashed")
+  tm_borders(col = "red", lty = "dashed") +
+  tm_layout(
+    title = "Base",
+    legend.show = FALSE,
+    frame = FALSE
+  )
 
-scenario_bike %>%
+bike2 = active_bike %>%
   tm_shape() +
-  tm_lines("bike", palette = "-viridis", breaks = bike_brks) +
+  tm_lines("bike",
+           title.col = "Viagens de bicicleta",
+           palette = "-viridis",
+           breaks = bike_brks) +
   tm_shape(sp_boundary) +
-  tm_borders(col="red", alpha = 0.5) +
+  tm_borders(col = "red") +
   tm_shape(sao_miguel) +
-  tm_borders(col = "red", lty = "dashed")
+  tm_borders(col = "red", lty = "dashed") +
+  tm_layout(
+    title = "Curto-Prazo",
+    legend.show = FALSE,
+    frame = FALSE
+  )
+
+bike3 = go_dutch_bike %>%
+  tm_shape() +
+  tm_lines("bike",
+           title.col = "Viagens de bicicleta",
+           palette = "-viridis",
+           breaks = bike_brks) +
+  tm_shape(sp_boundary) +
+  tm_borders(col = "red") +
+  tm_shape(sao_miguel) +
+  tm_borders(col = "red", lty = "dashed") +
+  tm_layout(
+    title = "Go Dutch",
+    legend.show = FALSE,
+    frame = FALSE
+  )
+
+bike4 = ebikes_bike %>%
+  tm_shape() +
+  tm_lines("bike",
+           title.col = "Viagens de bicicleta",
+           palette = "-viridis",
+           breaks = bike_brks) +
+  tm_shape(sp_boundary) +
+  tm_borders(col = "red") +
+  tm_shape(sao_miguel) +
+  tm_borders(col = "red", lty = "dashed") +
+  tm_layout(
+    title = "Ebikes",
+    legend.show = FALSE,
+    frame = FALSE
+  )
+
+tmap_arrange(bike1, bike2, bike3, bike4, ncol = 2) %>%
+  tmap_save("route_level.png")
+
+
+
+# Foot trips
 
 base_walk %>%
   tm_shape() +
