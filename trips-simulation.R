@@ -478,31 +478,40 @@ tmap_arrange(foot1, foot2, ncol = 2) %>%
 
 zone_level = routes_fast_base %>%
   ungroup() %>%
-  select(zona_o, zona_d, route_number, bike, foot) %>%
+  select(zona_o, zona_d, route_number, bike, foot, all) %>%
   rename(foot_base = foot, bike_base = bike) %>%
-  left_join(routes_fast_active, by=c("zona_o", "zona_d", "route_number")) %>%
-  rename(bike_scenario = bike, foot_scenario = foot) %>%
-  select(zona_o, bike_base, bike_scenario, foot_base, foot_scenario) %>%
+  left_join(select(routes_fast_active, zona_o, zona_d, route_number, bike, foot), by = c("zona_o", "zona_d", "route_number")) %>%
+  rename(bike_active = bike, foot_active = foot) %>%
+  left_join(select(routes_fast_go_dutch, zona_o, zona_d, route_number, bike, foot), by = c("zona_o", "zona_d", "route_number")) %>%
+  rename(bike_go_dutch = bike, foot_go_dutch = foot) %>%
+  left_join(select(routes_fast_ebikes, zona_o, zona_d, route_number, bike, foot), by = c("zona_o", "zona_d", "route_number")) %>%
+  rename(bike_ebikes = bike, foot_ebikes = foot) %>%
+  select(-zona_d, -route_number) %>%
   group_by(zona_o) %>%
   summarise_all(sum) %>%
   ungroup() %>%
-  mutate(delta_bike = bike_scenario - bike_base,
-         delta_foot = foot_scenario - foot_base,
-         zona_o = as.numeric(zona_o)
-         ) %>%
+  mutate(
+    `Base` = (bike_base + foot_base) / all,
+    `Curto Prazo` = (bike_active + foot_active) / all,
+    `Go Dutch` = (bike_go_dutch + foot_go_dutch) / all,
+    `Ebikes` = (bike_ebikes + foot_ebikes) / all
+  ) %>%
+  select(zona_o, `Base`, `Curto Prazo`, `Go Dutch`, `Ebikes`) %>%
+  pivot_longer(!zona_o,
+               names_to = "Scenario",
+               values_to = "share_active_trips") %>%
+  mutate(zona_o = as.numeric(zona_o),
+         Scenario = factor(Scenario, levels = c("Base", "Curto Prazo", "Go Dutch", "Ebikes"))
+         )%>%
   left_join(zonas_od, by=c("zona_o"="NumeroZona")) %>%
   st_as_sf()
 
 tm_shape(zone_level) +
-  tm_polygons(col = "delta_bike",
-              alpha = .5,
-              title = "Aumento viagens de bicicleta") +
+  tm_polygons(col = "share_active_trips",
+              title = "Parcela de viagens ativas",
+              palette = "-viridis",
+              style = "cont") +
+  tm_facets("Scenario") +
   tm_shape(sp_boundary) +
-  tm_borders(col = "red")
-
-tm_shape(zone_level) +
-  tm_polygons(col = "delta_foot",
-              alpha = .5,
-              title = "Aumento de viagens a pé") +
-  tm_shape(sp_boundary) +
-  tm_borders(col = "red")
+  tm_borders(col = "red") +
+  tm_layout(frame = FALSE)
