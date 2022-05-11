@@ -335,7 +335,9 @@ g4 = ggplot(ebikes_results) +
   scale_fill_manual(values = col_modes, name = "Modo") +
   theme_bw()
 
-(g1 | g2 ) / (g3 | g4 )
+bar = (g1 | g2 ) / (g3 | g4 )
+
+ggsave("bar_plot.png", bar, device = "png", width = 16, height = 9)
 
 
 # Visualizations at the route level --------------------------------------------
@@ -439,7 +441,7 @@ bike4 = ebikes_bike %>%
   )
 
 tmap_arrange(bike1, bike2, bike3, bike4, ncol = 2) %>%
-  tmap_save("route_level.png")
+  tmap_save("route_level.png", width = 16, height = 9)
 
 # Foot trips
 
@@ -471,7 +473,7 @@ foot2 = active_walk %>%
   )
 
 tmap_arrange(foot1, foot2, ncol = 2) %>%
-  tmap_save("route_level_foot.png")
+  tmap_save("route_level_foot.png", width = 16, height = 9)
 
 
 # Visualizations at the Zone level ---------------------------------------------
@@ -506,7 +508,7 @@ zone_level = routes_fast_base %>%
   left_join(zonas_od, by=c("zona_o"="NumeroZona")) %>%
   st_as_sf()
 
-tm_shape(zone_level) +
+zone_level_map = tm_shape(zone_level) +
   tm_polygons(col = "share_active_trips",
               title = "Parcela de viagens ativas",
               palette = "-viridis",
@@ -515,3 +517,5 @@ tm_shape(zone_level) +
   tm_shape(sp_boundary) +
   tm_borders(col = "red") +
   tm_layout(frame = FALSE)
+
+tmap_save(zone_level_map, filename = "zone_level.png", width = 16, height = 9)
