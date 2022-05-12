@@ -232,7 +232,6 @@ routes_fast_active = routes_fast_base %>%
 
 routes_fast_go_dutch = routes_fast_base %>%
   mutate(
-    # Specify the Go Dutch scenario we will use to replace remaining car trips with cycling
     bike_increase_proportion = uptake_pct_godutch_2020(
       distance = rf_dist_km,
       gradient = rf_avslope_perc
@@ -245,7 +244,6 @@ routes_fast_go_dutch = routes_fast_base %>%
 
 routes_fast_ebikes = routes_fast_base %>%
   mutate(
-    # Specify the Go Dutch scenario we will use to replace remaining car trips with cycling
     bike_increase_proportion = uptake_pct_ebike_2020(
       distance = rf_dist_km,
       gradient = rf_avslope_perc
@@ -337,88 +335,187 @@ g4 = ggplot(ebikes_results) +
   scale_fill_manual(values = col_modes, name = "Modo") +
   theme_bw()
 
-(g1 | g2 ) / (g3 | g4 )
+bar = (g1 | g2 ) / (g3 | g4 )
+
+ggsave("bar_plot.png", bar, device = "png", width = 16, height = 9)
 
 
 # Visualizations at the route level --------------------------------------------
 
-base_bike = overline(routes_fast, "bike")
-base_walk = overline(routes_fast, "foot")
+rm("od_jittered", "osm_sp", "viagens_zl", "viagens_top", "viagens_top_sf")
+gc()
 
 sao_miguel = st_read("./sao_miguel_paulista.geojson")
 
-scenario = routes_fast %>%
+base_bike = overline(routes_fast, "bike")
+base_walk = overline(routes_fast, "foot")
+
+active = routes_fast %>%
   select(zona_o, zona_d, route_number) %>%
   left_join(routes_fast_active, by=c("zona_o", "zona_d", "route_number"))
 
-scenario_bike = overline(scenario, "bike")
-scenario_walk = overline(scenario, "foot")
+go_dutch = routes_fast %>%
+  select(zona_o, zona_d, route_number) %>%
+  left_join(routes_fast_go_dutch, by = c("zona_o", "zona_d", "route_number"))
+
+ebikes = routes_fast %>%
+  select(zona_o, zona_d, route_number) %>%
+  left_join(routes_fast_ebikes, by = c("zona_o", "zona_d", "route_number"))
+
+active_bike = overline(active, "bike")
+ebikes_bike = overline(ebikes, "bike")
+go_dutch_bike = overline(go_dutch, "bike")
+
+active_walk = overline(active, "foot")
+
+rm("ebikes", "go_dutch", "active")
+
+
+tmap_mode("plot")
 
 bike_brks = c(0, 100, 500, 1000, 5000, 10000, 20000)       # keep consistent with the active scenario
 foot_brks = c(0, 1000, 5000, 10000, 25000, 50000)
 
-base_bike %>%
+bike1 = base_bike %>%
   tm_shape() +
-  tm_lines("bike", palette = "-viridis", breaks = bike_brks) +
+  tm_lines("bike",
+           title.col = "Viagens de bicicleta",
+           palette = "-viridis",
+           breaks = bike_brks) +
   tm_shape(sp_boundary) +
-  tm_borders(col = "red", alpha = 0.5) +
+  tm_borders(col = "red") +
   tm_shape(sao_miguel) +
-  tm_borders(col = "red", lty = "dashed")
+  tm_borders(col = "red", lty = "dashed") +
+  tm_layout(
+    title = "Base",
+    legend.show = FALSE,
+    frame = FALSE
+  )
 
-scenario_bike %>%
+bike2 = active_bike %>%
   tm_shape() +
-  tm_lines("bike", palette = "-viridis", breaks = bike_brks) +
+  tm_lines("bike",
+           title.col = "Viagens de bicicleta",
+           palette = "-viridis",
+           breaks = bike_brks) +
   tm_shape(sp_boundary) +
-  tm_borders(col="red", alpha = 0.5) +
+  tm_borders(col = "red") +
   tm_shape(sao_miguel) +
-  tm_borders(col = "red", lty = "dashed")
+  tm_borders(col = "red", lty = "dashed") +
+  tm_layout(
+    title = "Curto-Prazo",
+    legend.show = FALSE,
+    frame = FALSE
+  )
 
-base_walk %>%
+bike3 = go_dutch_bike %>%
+  tm_shape() +
+  tm_lines("bike",
+           title.col = "Viagens de bicicleta",
+           palette = "-viridis",
+           breaks = bike_brks) +
+  tm_shape(sp_boundary) +
+  tm_borders(col = "red") +
+  tm_shape(sao_miguel) +
+  tm_borders(col = "red", lty = "dashed") +
+  tm_layout(
+    title = "Go Dutch",
+    legend.show = FALSE,
+    frame = FALSE
+  )
+
+bike4 = ebikes_bike %>%
+  tm_shape() +
+  tm_lines("bike",
+           title.col = "Viagens de bicicleta",
+           palette = "-viridis",
+           breaks = bike_brks) +
+  tm_shape(sp_boundary) +
+  tm_borders(col = "red") +
+  tm_shape(sao_miguel) +
+  tm_borders(col = "red", lty = "dashed") +
+  tm_layout(
+    title = "Ebikes",
+    legend.show = FALSE,
+    frame = FALSE
+  )
+
+tmap_arrange(bike1, bike2, bike3, bike4, ncol = 2) %>%
+  tmap_save("route_level.png", width = 16, height = 9)
+
+# Foot trips
+
+foot1 = base_walk %>%
   tm_shape() +
   tm_lines("foot", palette = "-viridis", breaks = foot_brks) +
   tm_shape(sp_boundary) +
-  tm_borders(col="red", alpha = 0.5) +
+  tm_borders(col="red") +
   tm_shape(sao_miguel) +
-  tm_borders(col = "red", lty = "dashed")
+  tm_borders(col = "red", lty = "dashed") +
+  tm_layout(
+    title = "Base",
+    legend.show = FALSE,
+    frame = FALSE
+  )
 
-scenario_walk %>%
+
+foot2 = active_walk %>%
   tm_shape() +
   tm_lines("foot", palette = "-viridis", breaks = foot_brks) +
   tm_shape(sp_boundary) +
-  tm_borders(col="red", alpha = 0.5) +
+  tm_borders(col="red") +
   tm_shape(sao_miguel) +
-  tm_borders(col = "red", lty = "dashed")
+  tm_borders(col = "red", lty = "dashed") +
+  tm_layout(
+    title = "Curto-Prazo",
+    legend.show = FALSE,
+    frame = FALSE
+  )
+
+tmap_arrange(foot1, foot2, ncol = 2) %>%
+  tmap_save("route_level_foot.png", width = 16, height = 9)
 
 
 # Visualizations at the Zone level ---------------------------------------------
 
 zone_level = routes_fast_base %>%
   ungroup() %>%
-  select(zona_o, zona_d, route_number, bike, foot) %>%
+  select(zona_o, zona_d, route_number, bike, foot, all) %>%
   rename(foot_base = foot, bike_base = bike) %>%
-  left_join(routes_fast_active, by=c("zona_o", "zona_d", "route_number")) %>%
-  rename(bike_scenario = bike, foot_scenario = foot) %>%
-  select(zona_o, bike_base, bike_scenario, foot_base, foot_scenario) %>%
+  left_join(select(routes_fast_active, zona_o, zona_d, route_number, bike, foot), by = c("zona_o", "zona_d", "route_number")) %>%
+  rename(bike_active = bike, foot_active = foot) %>%
+  left_join(select(routes_fast_go_dutch, zona_o, zona_d, route_number, bike, foot), by = c("zona_o", "zona_d", "route_number")) %>%
+  rename(bike_go_dutch = bike, foot_go_dutch = foot) %>%
+  left_join(select(routes_fast_ebikes, zona_o, zona_d, route_number, bike, foot), by = c("zona_o", "zona_d", "route_number")) %>%
+  rename(bike_ebikes = bike, foot_ebikes = foot) %>%
+  select(-zona_d, -route_number) %>%
   group_by(zona_o) %>%
   summarise_all(sum) %>%
   ungroup() %>%
-  mutate(delta_bike = bike_scenario - bike_base,
-         delta_foot = foot_scenario - foot_base,
-         zona_o = as.numeric(zona_o)
-         ) %>%
+  mutate(
+    `Base` = (bike_base + foot_base) / all,
+    `Curto Prazo` = (bike_active + foot_active) / all,
+    `Go Dutch` = (bike_go_dutch + foot_go_dutch) / all,
+    `Ebikes` = (bike_ebikes + foot_ebikes) / all
+  ) %>%
+  select(zona_o, `Base`, `Curto Prazo`, `Go Dutch`, `Ebikes`) %>%
+  pivot_longer(!zona_o,
+               names_to = "Scenario",
+               values_to = "share_active_trips") %>%
+  mutate(zona_o = as.numeric(zona_o),
+         Scenario = factor(Scenario, levels = c("Base", "Curto Prazo", "Go Dutch", "Ebikes"))
+         )%>%
   left_join(zonas_od, by=c("zona_o"="NumeroZona")) %>%
   st_as_sf()
 
-tm_shape(zone_level) +
-  tm_polygons(col = "delta_bike",
-              alpha = .5,
-              title = "Aumento viagens de bicicleta") +
+zone_level_map = tm_shape(zone_level) +
+  tm_polygons(col = "share_active_trips",
+              title = "Parcela de viagens ativas",
+              palette = "-viridis",
+              style = "cont") +
+  tm_facets("Scenario") +
   tm_shape(sp_boundary) +
-  tm_borders(col = "red")
+  tm_borders(col = "red") +
+  tm_layout(frame = FALSE)
 
-tm_shape(zone_level) +
-  tm_polygons(col = "delta_foot",
-              alpha = .5,
-              title = "Aumento de viagens a pé") +
-  tm_shape(sp_boundary) +
-  tm_borders(col = "red")
+tmap_save(zone_level_map, filename = "zone_level.png", width = 16, height = 9)
