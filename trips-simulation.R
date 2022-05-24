@@ -373,107 +373,128 @@ rm("ebikes", "go_dutch", "active")
 
 tmap_mode("plot")
 
-bike_brks = c(0, 100, 500, 1000, 5000, 10000, 20000)       # keep consistent with the active scenario
-foot_brks = c(0, 1000, 5000, 10000, 25000, 50000)
+bike_brks = c(0, 1000, 2500, 5000, 10000)       # keep consistent with the active scenario
+foot_brks = c(0, 5000, 10000, 20000, 35000)
 
-bike1 = base_bike %>%
+bike1 = zona_leste %>%
   tm_shape() +
-  tm_lines("bike",
-           title.col = "Viagens de bicicleta",
-           palette = "-viridis",
-           breaks = bike_brks) +
+  tm_fill(col = "lightgrey") +
+  tm_shape(base_bike) +
+  tm_lines(lwd = "bike",
+           title.lwd = "Viagens de bicicleta",
+           col = "darkgreen",
+           lwd.legend = bike_brks,
+           scale = 2) +
   tm_shape(sp_boundary) +
   tm_borders(col = "red") +
   tm_shape(sao_miguel) +
   tm_borders(col = "red", lty = "dashed") +
   tm_layout(
-    title = "Base",
-    legend.show = FALSE,
+    title = "Cenário Base",
     frame = FALSE
   )
 
-bike2 = active_bike %>%
+bike2 = zona_leste %>%
   tm_shape() +
-  tm_lines("bike",
-           title.col = "Viagens de bicicleta",
-           palette = "-viridis",
-           breaks = bike_brks) +
+  tm_fill(col = "lightgrey") +
+  tm_shape(active_bike %>%
+             mutate(bike = case_when(bike < 0 ~ 0,
+                                     TRUE ~ bike)
+                    )
+           ) +
+  tm_lines(lwd = "bike",
+           title.lwd = "Viagens de bicicleta",
+           col = "darkgreen",
+           lwd.legend = bike_brks,
+           scale = 2) +
   tm_shape(sp_boundary) +
   tm_borders(col = "red") +
   tm_shape(sao_miguel) +
   tm_borders(col = "red", lty = "dashed") +
   tm_layout(
-    title = "Curto-Prazo",
-    legend.show = FALSE,
+    title = "Cenário de Curto-Prazo",
     frame = FALSE
   )
 
-bike3 = go_dutch_bike %>%
+bike3 = zona_leste %>%
   tm_shape() +
-  tm_lines("bike",
-           title.col = "Viagens de bicicleta",
-           palette = "-viridis",
-           breaks = bike_brks) +
+  tm_fill(col = "lightgrey") +
+  tm_shape(go_dutch_bike) +
+  tm_lines(lwd = "bike",
+           title.lwd = "Viagens de bicicleta",
+           col = "darkgreen",
+           lwd.legend = bike_brks,
+           scale = 2) +
   tm_shape(sp_boundary) +
   tm_borders(col = "red") +
   tm_shape(sao_miguel) +
   tm_borders(col = "red", lty = "dashed") +
   tm_layout(
-    title = "Go Dutch",
-    legend.show = FALSE,
+    title = "Cenário Go Dutch",
     frame = FALSE
   )
 
-bike4 = ebikes_bike %>%
+bike4 = zona_leste %>%
   tm_shape() +
-  tm_lines("bike",
-           title.col = "Viagens de bicicleta",
-           palette = "-viridis",
-           breaks = bike_brks) +
+  tm_fill(col = "lightgrey") +
+  tm_shape(ebikes_bike) +
+  tm_lines(lwd = "bike",
+           title.lwd = "Viagens de bicicleta",
+           col = "darkgreen",
+           lwd.legend = bike_brks,
+           scale = 2) +
   tm_shape(sp_boundary) +
   tm_borders(col = "red") +
   tm_shape(sao_miguel) +
   tm_borders(col = "red", lty = "dashed") +
   tm_layout(
-    title = "Ebikes",
-    legend.show = FALSE,
+    title = "Cenário Ebikes",
     frame = FALSE
   )
 
 tmap_arrange(bike1, bike2, bike3, bike4, ncol = 2) %>%
-  tmap_save("route_level.png", width = 16, height = 9)
+  tmap_save("route_level.png", width = 12, height = 8)
 
 # Foot trips
 
-foot1 = base_walk %>%
+foot1 = zona_leste %>%
   tm_shape() +
-  tm_lines("foot", palette = "-viridis", breaks = foot_brks) +
+  tm_fill(col = "lightgrey") +
+  tm_shape(base_walk) +
+  tm_lines(lwd = "foot",
+           title.lwd = "Viagens a pé",
+           col = "blue",
+           lwd.legend = foot_brks,
+           scale = 2) +
   tm_shape(sp_boundary) +
-  tm_borders(col="red") +
+  tm_borders(col = "red") +
   tm_shape(sao_miguel) +
   tm_borders(col = "red", lty = "dashed") +
   tm_layout(
-    title = "Base",
-    legend.show = FALSE,
+    title = "Cenário Base",
     frame = FALSE
   )
 
-
-foot2 = active_walk %>%
+foot2 = zona_leste %>%
   tm_shape() +
-  tm_lines("foot", palette = "-viridis", breaks = foot_brks) +
+  tm_fill(col = "lightgrey") +
+  tm_shape(active_walk) +
+  tm_lines(lwd = "foot",
+           title.lwd = "Viagens a pé",
+           col = "blue",
+           lwd.legend = foot_brks,
+           scale = 2) +
   tm_shape(sp_boundary) +
-  tm_borders(col="red") +
+  tm_borders(col = "red") +
   tm_shape(sao_miguel) +
   tm_borders(col = "red", lty = "dashed") +
   tm_layout(
-    title = "Curto-Prazo",
-    legend.show = FALSE,
+    title = "Cenário de Curto-Prazo",
     frame = FALSE
   )
 
 tmap_arrange(foot1, foot2, ncol = 2) %>%
-  tmap_save("route_level_foot.png", width = 16, height = 9)
+  tmap_save("route_level_foot.png", width = 6, height = 4)
 
 
 # Visualizations at the Zone level ---------------------------------------------
