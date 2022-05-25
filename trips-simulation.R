@@ -345,6 +345,8 @@ ggsave("bar_plot.png", bar, device = "png", width = 16, height = 9)
 rm("od_jittered", "osm_sp", "viagens_zl", "viagens_top", "viagens_top_sf")
 gc()
 
+zona_leste = st_simplify(zona_leste, preserveTopology = FALSE, dTolerance = .001)
+
 sao_miguel = st_read("./sao_miguel_paulista.geojson")
 
 base_bike = overline(routes_fast, "bike")
@@ -384,7 +386,7 @@ bike1 = zona_leste %>%
            title.lwd = "Viagens de bicicleta",
            col = "darkgreen",
            lwd.legend = bike_brks,
-           scale = 2) +
+           scale = 1.5) +
   tm_shape(sp_boundary) +
   tm_borders(col = "red") +
   tm_shape(sao_miguel) +
@@ -406,7 +408,8 @@ bike2 = zona_leste %>%
            title.lwd = "Viagens de bicicleta",
            col = "darkgreen",
            lwd.legend = bike_brks,
-           scale = 2) +
+           scale = 1.5*(max(active_bike$bike)/max(base_bike$bike))
+           ) +
   tm_shape(sp_boundary) +
   tm_borders(col = "red") +
   tm_shape(sao_miguel) +
@@ -424,7 +427,8 @@ bike3 = zona_leste %>%
            title.lwd = "Viagens de bicicleta",
            col = "darkgreen",
            lwd.legend = bike_brks,
-           scale = 2) +
+           scale = 1.5*(max(go_dutch_bike$bike)/max(base_bike$bike))
+           ) +
   tm_shape(sp_boundary) +
   tm_borders(col = "red") +
   tm_shape(sao_miguel) +
@@ -442,7 +446,8 @@ bike4 = zona_leste %>%
            title.lwd = "Viagens de bicicleta",
            col = "darkgreen",
            lwd.legend = bike_brks,
-           scale = 2) +
+           scale = 1.5*(max(ebikes_bike$bike)/max(base_bike$bike))
+           ) +
   tm_shape(sp_boundary) +
   tm_borders(col = "red") +
   tm_shape(sao_miguel) +
@@ -465,7 +470,7 @@ foot1 = zona_leste %>%
            title.lwd = "Viagens a pé",
            col = "blue",
            lwd.legend = foot_brks,
-           scale = 2) +
+           scale = 1.5) +
   tm_shape(sp_boundary) +
   tm_borders(col = "red") +
   tm_shape(sao_miguel) +
@@ -483,7 +488,8 @@ foot2 = zona_leste %>%
            title.lwd = "Viagens a pé",
            col = "blue",
            lwd.legend = foot_brks,
-           scale = 2) +
+           scale = 1.5*(max(active_walk$foot)/max(base_walk$foot))
+           ) +
   tm_shape(sp_boundary) +
   tm_borders(col = "red") +
   tm_shape(sao_miguel) +
