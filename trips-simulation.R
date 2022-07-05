@@ -546,3 +546,62 @@ zone_level_map = tm_shape(zone_level) +
   tm_layout(frame = FALSE)
 
 tmap_save(zone_level_map, filename = "zone_level.png", width = 16, height = 9)
+                     
+##Calculating impact using distance 
+
+Dist_routs_base = routes_fast_base
+
+names(Dist_routs_base)
+Dist_routs_base$bikeKM = Dist_routs_base$bike * Dist_routs_base$rf_dist_km
+Dist_routs_base$carKM = Dist_routs_base$car * Dist_routs_base$rf_dist_km
+Dist_routs_base$footKM = Dist_routs_base$foot * Dist_routs_base$rf_dist_km
+
+Dist_routs_base_results = Dist_routs_base %>%
+  dplyr::select(dist_bands, bikeKM, carKM, footKM) %>%
+  tidyr::pivot_longer(cols = matches("bikeKM|carKM|footKM"), names_to = "mode") %>%
+  mutate(mode = factor(mode, levels = c("bikeKM", "carKM", "footKM"), ordered = TRUE)) %>%
+  group_by(dist_bands, mode) %>%
+  summarise(Trips = sum(value))
+
+Dist_routs_active = routes_fast_active
+
+names(Dist_routs_active)
+Dist_routs_active$bikeKM = Dist_routs_active$bike * Dist_routs_active$rf_dist_km
+Dist_routs_active$carKM = Dist_routs_active$car * Dist_routs_active$rf_dist_km
+Dist_routs_active$footKM = Dist_routs_active$foot * Dist_routs_active$rf_dist_km
+
+Dist_routs_active_results = Dist_routs_active %>%
+  dplyr::select(dist_bands, bikeKM, carKM, footKM) %>%
+  tidyr::pivot_longer(cols = matches("bikeKM|carKM|footKM"), names_to = "mode") %>%
+  mutate(mode = factor(mode, levels = c("bikeKM", "carKM", "footKM"), ordered = TRUE)) %>%
+  group_by(dist_bands, mode) %>%
+  summarise(Trips = sum(value))
+
+Dist_routs_go_dutch = routes_fast_go_dutch
+
+names(Dist_routs_go_dutch)
+Dist_routs_go_dutch$bikeKM = Dist_routs_go_dutch$bike * Dist_routs_go_dutch$rf_dist_km
+Dist_routs_go_dutch$carKM = Dist_routs_go_dutch$car * Dist_routs_go_dutch$rf_dist_km
+Dist_routs_go_dutch$footKM = Dist_routs_go_dutch$foot * Dist_routs_go_dutch$rf_dist_km
+
+Dist_routs_go_dutch_results = Dist_routs_go_dutch %>%
+  dplyr::select(dist_bands, bikeKM, carKM, footKM) %>%
+  tidyr::pivot_longer(cols = matches("bikeKM|carKM|footKM"), names_to = "mode") %>%
+  mutate(mode = factor(mode, levels = c("bikeKM", "carKM", "footKM"), ordered = TRUE)) %>%
+  group_by(dist_bands, mode) %>%
+  summarise(Trips = sum(value))
+
+Dist_routs_ebikes = routes_fast_ebikes
+
+names(Dist_routs_ebikes)
+Dist_routs_ebikes$bikeKM = Dist_routs_ebikes$bike * Dist_routs_ebikes$rf_dist_km
+Dist_routs_ebikes$carKM = Dist_routs_ebikes$car * Dist_routs_ebikes$rf_dist_km
+Dist_routs_ebikes$footKM = Dist_routs_ebikes$foot * Dist_routs_ebikes$rf_dist_km
+
+Dist_routs_ebikes_results = Dist_routs_ebikes %>%
+  dplyr::select(dist_bands, bikeKM, carKM, footKM) %>%
+  tidyr::pivot_longer(cols = matches("bikeKM|carKM|footKM"), names_to = "mode") %>%
+  mutate(mode = factor(mode, levels = c("bikeKM", "carKM", "footKM"), ordered = TRUE)) %>%
+  group_by(dist_bands, mode) %>%
+  summarise(Trips = sum(value))
+
