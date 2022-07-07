@@ -96,6 +96,7 @@ zonas_od_to_jitter = zonas_od_zl %>%
 sf_use_s2(FALSE)
 # Sanity check desire lines data
 summary(viagens_zl$all)
+sum(viagens_zl$all)
 viagens_top = viagens_zl %>%
   filter(all > 10000)
 viagens_top_sf = od::od_to_sf(viagens_top, zonas_od_to_jitter)
@@ -110,14 +111,17 @@ qtm(viagens_top_sf)
 # piggyback::pb_download("od_jittered_ZL.gpkg")
 od_jittered = st_read("./od_jittered_ZL.gpkg")
 
+sum(od_jittered$all)
+library(sf)
 od_jittered %>%
-  top_n(1000, all) %>%
+  sample_n(1000, weight = od_jittered$all) %>%
   qtm()
-
+nrow(od_jittered) # 16k
 # routes_fast = route(l = od_jittered, route_fun = cyclestreets::journey)
 #
 # piggyback::pb_download("routes_zl.gpkg")
 routes_fast = sf::read_sf("routes_zl.gpkg")
+nrow(routes_fast)
 names(routes_fast)
 
 routes_fast_base = routes_fast %>%
@@ -347,7 +351,7 @@ gc()
 
 zona_leste = st_simplify(zona_leste, preserveTopology = FALSE, dTolerance = .001)
 
-sao_miguel = st_read("./sao_miguel_paulista.geojson")
+sao_miguel = st_read("https://github.com/spstreets/OD2017/releases/download/1/sao_miguel_paulista.geojson")
 
 base_bike = overline(routes_fast, "bike")
 base_walk = overline(routes_fast, "foot")
@@ -546,8 +550,8 @@ zone_level_map = tm_shape(zone_level) +
   tm_layout(frame = FALSE)
 
 tmap_save(zone_level_map, filename = "zone_level.png", width = 16, height = 9)
-                     
-##Calculating impact using distance 
+
+##Calculating impact using distance
 
 Dist_routs_base = routes_fast_base
 
@@ -564,6 +568,7 @@ Dist_routs_base_results = Dist_routs_base %>%
   summarise(Trips = sum(value))
 
 Dist_routs_active = routes_fast_active
+
 
 names(Dist_routs_active)
 Dist_routs_active$bikeKM = Dist_routs_active$bike * Dist_routs_active$rf_dist_km
@@ -605,3 +610,46 @@ Dist_routs_ebikes_results = Dist_routs_ebikes %>%
   group_by(dist_bands, mode) %>%
   summarise(Trips = sum(value))
 
+Dist_routs_ebikes_results %>%
+  ggplot() +
+  geom_col(aes(dist_bands, Trips, fill = mode)) +
+  ylab("Km/day")
+
+
+# Calculate change
+
+Dist_routs_ebikes_change = Dist_routs_ebikes_results
+Dist_routs_ebikes_change$Trips = Dist_routs_ebikes_results$Trips -
+  Dist_routs_base_results$Trips
+
+Dist_routs_ebikes_change %>%
+  filter(mode == "bikeKM") %>%
+  ggplot() +
+  geom_col(aes(dist_bands, Trips, fill = mode)) +
+  ylab("Km/day")
+
+
+interactive_cycle_potential_ebike = zona_leste %>%
+  tm_shape() +
+  tm_borders(col = "blue") +
+  tm_shape(ebikes_bike %>%
+             slice_max(n = 20000, order_by = bike) %>%
+             mutate(bike = round(bike))) +
+  tm_lines(lwd = "bike",
+           title.lwd = "Viagens de bicicleta",
+           col = "darkgreen",
+           lwd.legend = bike_brks,
+           scale = 1.5*(max(ebikes_bike$bike)/max(base_bike$bike)),
+           id = NULL
+  ) +
+  tm_shape(sp_boundary) +
+  tm_borders(col = "red") +
+  tm_shape(sao_miguel) +
+  tm_borders(col = "red", lty = "dashed") +
+  tm_layout(
+    title = "Cenário Ebikes",
+    frame = FALSE
+  )
+interactive_cycle_potential_ebike
+tmap_save(interactive_cycle_potential_ebike, "interactive_cycle_potential_ebike.html")
+# Online location: https://rpubs.com/RobinLovelace/922073
