@@ -628,25 +628,6 @@ Dist_routs_ebikes_change %>%
   geom_col(aes(dist_bands, Trips, fill = mode)) +
   ylab("Km/day")
 
-bike1 = zona_leste %>%
-  tm_shape() +
-  tm_fill(col = "lightgrey") +
-  tm_shape(base_bike) +
-  tm_lines(lwd = "bike",
-           title.lwd = "Viagens de bicicleta",
-           col = "darkgreen",
-           lwd.legend = bike_brks,
-           scale = 1.5) +
-  tm_shape(sp_boundary) +
-  tm_borders(col = "red") +
-  tm_shape(sao_miguel) +
-  tm_borders(col = "red", lty = "dashed") +
-  tm_layout(
-    title = "Cenário Base",
-    frame = FALSE
-  )
-
-
 interactive_cycle_potential_base = zona_leste %>%
   tm_shape() +
   tm_borders(col = "blue") +
