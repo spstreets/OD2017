@@ -104,11 +104,11 @@ Now the A/B Streets classification (foot, bike, car, public transport and other)
 OD_2017_v1 = OD_2017_v1 %>%
   dplyr::mutate(
     mode_ab_streets = case_when(
-      modoprin %in% 1:6 ~ "Transporte público",
-      modoprin == 16 ~ "A pé",
-      modoprin==9 | modoprin==10 ~ "Carro",
-      modoprin %in% c(7, 8, 11, 12, 13, 14, 17) ~ "Outro",
-      modoprin==15 ~ "Bicicleta"
+      modoprin %in% 1:6 ~ "public",
+      modoprin == 16 ~ "foot",
+      modoprin==9 | modoprin==10 ~ "car",
+      modoprin %in% c(7, 8, 11, 12, 13, 14, 17) ~ "other",
+      modoprin==15 ~ "bike"
     )
   )
 
@@ -181,23 +181,22 @@ OD_2017_v1 %>%
   select(dist_bands, mode_ab_streets, fe_via) %>%
   group_by(dist_bands, mode_ab_streets) %>%
   summarise(Trips = sum(fe_via)) %>%
-  mutate(mode_ab_streets = factor(mode_ab_streets, levels = c("Carro",
-                                                              "Outro",
-                                                              "Transporte público",
-                                                              "Bicicleta",
-                                                              "A pé")
+  mutate(mode_ab_streets = factor(mode_ab_streets, levels = c("car",
+                                                              "other",
+                                                              "public",
+                                                              "bike",
+                                                              "foot")
                                   )
          ) %>%
   ggplot(aes(x = dist_bands, y = Trips, fill = mode_ab_streets)) +
   geom_col() +
-  ggtitle("Classificação A/B Streets") +
-  xlab("Distância (km)") +
-  scale_y_continuous(name = "Milhares de viagens / dia",
+  xlab("Distance (km)") +
+  scale_y_continuous(name = "Thousands of travels / day",
                      labels=function(x) format(x/1000,
                                                big.mark = ",",
                                                decimal.mark = ".",
                                                scientific = FALSE)) +
-  scale_fill_manual(values = col_modes, name = "Modo") +
+  scale_fill_manual(values = col_modes, name = "Mode") +
   theme_bw()
 
 ```
@@ -530,7 +529,7 @@ distancias_commute_zona = OD_2017_v1 %>%
 
 Looking at the population data here.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
 populacao = tm_shape(pop_zona) +
   tm_polygons("pop",
@@ -550,9 +549,9 @@ tmap_arrange(populacao, densidade, ncol=2)
 
 Comparing the population with the Census (2010) using census tracts.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
-mapa_setores = read_census_tract(code_tract = "SP",
+mapa_setores = read_census_tract(code_tract = 35,
                                  year = 2010)
 
 pop_setores = readRDS("./pop_census_tract_2010.Rds")
@@ -597,7 +596,7 @@ zonas_pop = zonas %>%
 
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
 tm_shape(zonas_pop) +
   tm_fill(c("pop_zona", "pop_censo"),
@@ -611,7 +610,7 @@ tm_shape(zonas_pop) +
 
 Some people left São Paulo City, but is not significant relative to the total.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
 diff_map = tm_shape(zonas_pop) +
   tm_fill(c("diff_zona_censo"),
@@ -635,7 +634,7 @@ tmap_arrange(diff_map, perc_change, nrow = 1, ncol = 2)
 ```
 
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
 tm_shape(distancias_zona) +
   tm_fill("distancia_media",
@@ -645,7 +644,7 @@ tm_shape(distancias_zona) +
 
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
 tm_shape(distancias_commute_zona) +
   tm_fill("distancia_media",
@@ -664,7 +663,7 @@ tm_shape(distancias_commute_zona) +
 
 Walking and cycling are highly concentrated in few OD pairs (>90% in 1,000 pairs for walking and >90% in 500 pairs for cycling). Car trips are more dispersed, we have >90% of trips in 10,000 pairs. 
 
-```{r, include=FALSE}
+```{r, include=FALSE, eval=FALSE}
 
 bike_pairs = OD %>%
   select(-time) %>%
@@ -701,7 +700,7 @@ car_pairs = OD %>%
 
 Bike trips:
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
 desire_lines_bike = od_jitter(bike_pairs, zonas_od)
 
@@ -722,7 +721,7 @@ tm_shape(desire_lines_bike) +
 
 Foot trips:
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
 desire_lines_foot = od_jitter(foot_pairs, zonas_od)
 
@@ -743,7 +742,7 @@ tm_shape(desire_lines_foot) +
 
 Car trips, still too many lines (10,000) to account for >92% of total car trips.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
 desire_lines_car = od_jitter(car_pairs, zonas_od)
 
@@ -764,7 +763,7 @@ tm_shape(desire_lines_car) +
 
 Using the first 5,000 OD pairs, we have >78% of all car trips.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
 car_pairs_5 = desire_lines_car %>%
     slice_max(car,
@@ -792,7 +791,7 @@ tm_shape(desire_lines_car) +
 
 Using the biggest 1,000 pairs, we have >45% of all car trips.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
 car_pairs_1 = desire_lines_car %>%
     slice_max(car,
@@ -821,7 +820,7 @@ tm_shape(desire_lines_car) +
 
 ### Main routes by mode (takes a long time here) -- rewriting this part.
 
-```{r, eval=FALSE}
+```{r, eval=FALSE, eval=FALSE}
 
 bike_routes = od_jitter(bike_pairs, zonas_od) %>%
   st_transform(crs = 4326) %>%
@@ -838,7 +837,7 @@ saveRDS(bike_routes, file = "bike_routes_2021-09-16.Rds")
 
 ```
 
-```{r, eval=FALSE}
+```{r, eval=FALSE, eval=FALSE}
 
 foot_routes = od_jitter(foot_pairs, zonas_od) %>%
   st_transform(crs = 4326) %>%
@@ -855,7 +854,7 @@ saveRDS(foot_routes, file = "foot_routes_2021-09-16.Rds")
 
 ```
 
-```{r, eval=FALSE}
+```{r, eval=FALSE, eval=FALSE}
 
 car_routes = od_jitter(car_pairs, zonas_od) %>%
   st_transform(crs = 4326) %>%
@@ -878,7 +877,7 @@ saveRDS(car_routes, file = "car_routes_2021-09-16.Rds")
 
 Load the routes I calculated.
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 bike_routes = readRDS("bike_routes_2021-09-16.Rds")
 foot_routes = readRDS("foot_routes_2021-09-16.Rds")
 car_routes = readRDS("car_routes_2021-09-16.Rds")           
@@ -886,7 +885,7 @@ car_routes = readRDS("car_routes_2021-09-16.Rds")
 
 something wrong here, check later...
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 # remotes::install_cran("archive")
 # archive::archive("SAD69-96_SHP_redecicloviaria.rar") # fails
 # unrar SAD69-96_SHP_redecicloviaria.rar = bash command
@@ -932,7 +931,7 @@ leaflet(route_net_foot) %>%
 
 ### Infrastructure data (São Paulo municipality only)
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 
 OD_sp = OD_2017_v1 %>%
   filter(!is.na(modoprin) &
@@ -955,7 +954,7 @@ OD_sp = OD_2017_v1 %>%
 
 ```
 
-```{r, echo=FALSE}
+```{r, echo=FALSE, eval=FALSE}
 # I have two identical geometries in each route dataframe
 car_routes$route = NULL
 bike_routes$route = NULL
